@@ -8,6 +8,7 @@ target/
 *.class
 
 # Allure
+.allure/
 allure-results/
 allure-report/
 
