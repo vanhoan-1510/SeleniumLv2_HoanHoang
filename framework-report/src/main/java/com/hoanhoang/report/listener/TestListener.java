@@ -25,6 +25,6 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        Log.warning("Test skipped: " + result.getName());
+        Log.warn("Test skipped: " + result.getName());
     }
 }

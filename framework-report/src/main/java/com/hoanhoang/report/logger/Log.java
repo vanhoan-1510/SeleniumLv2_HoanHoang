@@ -7,23 +7,23 @@ public class Log {
 
     private static final Logger logger = LogManager.getLogger(Log.class);
 
+    public static void info(String message) {
+        logger.info(message);
+    }
+
     public static void step(String message) {
         logger.info("[STEP] " + message);
     }
 
-    public static void info(String message) {
-        logger.info("[INFO] " + message);
+    public static void debug(String message) {
+        logger.debug(message);
     }
 
-    public static void debug(String message) {
-        logger.debug("[DEBUG] " + message);
+    public static void warn(String message) {
+        logger.warn(message);
     }
 
     public static void error(String message) {
-        logger.error("[ERROR] " + message);
-    }
-
-    public static void warning(String message) {
-        logger.warn("[WARNING] " + message);
+        logger.error(message);
     }
 }

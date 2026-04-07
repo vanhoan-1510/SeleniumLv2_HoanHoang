@@ -1,0 +1,8 @@
+{
+  "baseUrl": "https://demo.testarchitect.com",
+  "browser": "chrome",
+  "headless": false,
+  "timeout": 30,
+  "remote": false,
+  "gridUrl": ""
+}
