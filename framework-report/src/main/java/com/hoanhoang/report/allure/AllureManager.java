@@ -10,6 +10,10 @@ import java.io.ByteArrayInputStream;
 public class AllureManager {
 
     public static void attachScreenshot(String name) {
+        if (DriverManager.getDriver() == null) {
+            attachText(name, "Screenshot not available: Driver was null");
+            return;
+        }
         byte[] screenshot = ((TakesScreenshot) DriverManager.getDriver())
                 .getScreenshotAs(OutputType.BYTES);
         Allure.addAttachment(name, new ByteArrayInputStream(screenshot));

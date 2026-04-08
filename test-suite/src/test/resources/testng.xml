@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Selenium Test Suite" parallel="none">
+
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+        <listener class-name="com.hoanhoang.report.listener.TestListener"/>
+    </listeners>
+
     <test name="Smoke Tests">
         <classes>
             <class name="com.hoanhoang.tests.LoginTest"/>

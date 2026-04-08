@@ -1,9 +1,14 @@
 package com.hoanhoang.core.element;
 
+import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.DriverManager;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
+
+import java.time.Duration;
 
 public class BaseElement implements Element {
 
@@ -15,18 +20,30 @@ public class BaseElement implements Element {
     }
 
     protected WebElement getElement() {
-        return DriverManager.getDriver().findElement(locator);
+        return getWait().until(ExpectedConditions.presenceOfElementLocated(locator));
+    }
+
+    protected WebElement getClickableElement() {
+        return getWait().until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    private WebDriverWait getWait() {
+        return new WebDriverWait(
+            DriverManager.getDriver(),
+            Duration.ofSeconds(ConfigLoader.getConfig().getTimeout())
+        );
     }
 
     @Override
     public void click() {
-        getElement().click();
+        getClickableElement().click();
     }
 
     @Override
     public void type(String text) {
-        getElement().clear();
-        getElement().sendKeys(text);
+        WebElement input = getElement();
+        input.clear();
+        input.sendKeys(text);
     }
 
     @Override

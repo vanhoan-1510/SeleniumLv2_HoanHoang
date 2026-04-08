@@ -4,12 +4,9 @@ import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.BrowserType;
 import com.hoanhoang.core.driver.DriverFactory;
 import com.hoanhoang.core.driver.DriverManager;
-import com.hoanhoang.report.listener.TestListener;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
 
-@Listeners(TestListener.class)
 public class BaseTest {
 
     @BeforeMethod
@@ -26,5 +23,6 @@ public class BaseTest {
     @AfterMethod
     public void tearDown() {
         DriverManager.quitDriver();
+        DriverManager.removeDriver();
     }
 }

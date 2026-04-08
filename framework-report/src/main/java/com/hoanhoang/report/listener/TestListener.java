@@ -2,6 +2,7 @@ package com.hoanhoang.report.listener;
 
 import com.hoanhoang.report.allure.AllureManager;
 import com.hoanhoang.report.logger.Log;
+import com.hoanhoang.core.driver.DriverManager;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
@@ -20,7 +21,11 @@ public class TestListener implements ITestListener {
     @Override
     public void onTestFailure(ITestResult result) {
         Log.error("Test failed: " + result.getName());
-        AllureManager.attachScreenshot("Screenshot on failure");
+        if (DriverManager.getDriver() != null) {
+            AllureManager.attachScreenshot("Screenshot on failure");
+        } else {
+            Log.warn("Driver was null at test failure - screenshot not available");
+        }
     }
 
     @Override
