@@ -18,3 +18,6 @@ allure-report/
 # OS
 .DS_Store
 Thumbs.db
+
+#garpuco
+.grapuco
