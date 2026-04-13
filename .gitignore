@@ -1,24 +1,23 @@
-# Compiled class file
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Maven
+target/
 *.class
 
-# Log file
+# Allure
+.allure/
+allure-results/
+allure-report/
+
+# Logs
 *.log
 
-# BlueJ files
-*.ctxt
+# OS
+.DS_Store
+Thumbs.db
 
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+#garpuco
+.grapuco
