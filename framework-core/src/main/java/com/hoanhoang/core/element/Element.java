@@ -6,4 +6,18 @@ public interface Element {
     void shouldHaveText(String expected);
     void shouldHaveValue(String expected);
     void shouldHave(String prop, String expected);
+
+
+    String getText();
+
+    String getValue();
+
+    void hover();
+
+    void jsClick();
+
+    boolean isVisible();
+
+    void shouldBeVisible();
+
 }

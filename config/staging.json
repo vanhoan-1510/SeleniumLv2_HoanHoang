@@ -1,0 +1,13 @@
+{
+  "baseUrl": "https://staging.testarchitect.com",
+  "browser": "chrome",
+  "headless": false,
+  "timeout": 30,
+  "pollingInterval": 100,
+  "interactionTimeout": 10,
+  "assertionTimeout": 10,
+  "remote": false,
+  "gridUrl": "",
+  "windowWidth": 1920,
+  "windowHeight": 1080
+}
