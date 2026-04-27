@@ -9,7 +9,7 @@
 
     <test name="Smoke Tests">
         <classes>
-            <class name="com.hoanhoang.tests.LoginTest"/>
+            <class name="com.hoanhoang.tests.TC01"/>
         </classes>
     </test>
 </suite>
