@@ -7,24 +7,35 @@ import org.openqa.selenium.By;
 public class BasePage {
 
     By login = By.xpath("//a[contains(@href,'account')]");
+    By shopLink = By.xpath("//a[contains(@href,'shop')]");
     By allDepartments = By.xpath("//span[normalize-space()='All departments']");
-    By categoryElectronic = By.xpath("//ul[@id='menu-all-departments-1']//a[contains(@class,'item-link')][normalize-space()='Electronic Components & Supplies']");    By productCard = By.cssSelector(".woocommerce-Price-amount.amount");
+    By categoryElectronic = By.xpath("//ul[@id='menu-all-departments-1']//a[contains(@class,'item-link')][normalize-space()='Electronic Components & Supplies']");
+    By cartLink = By.xpath("//a[contains(@href,'cart')]");
+    By myAccountLink = By.xpath("//a[contains(@href,'my-account')]");
 
 
     protected Element $(By locator) {
         return ElementFactory.$(locator);
     }
 
-        public void goToLoginPage() {
+    public void goToLoginPage() {
             $(login).click();
         }
+
+    public void goToShopPage() {
+        $(shopLink).click();
+    }
 
     public void goToCategoryElectronicPage() {
         $(allDepartments).hover();
         $(categoryElectronic).jsClick();
     }
 
-        public void goToProductCardPage() {
-            $(productCard).click();
-        }
+    public void goToCartPage() {
+        $(cartLink).click();
+    }
+
+    public void goToMyAccountPage() {
+        $(myAccountLink).click();
+    }
 }

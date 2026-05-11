@@ -27,11 +27,20 @@ public class BaseElement implements Element {
     }
 
     protected WebElement getElement() {
-        return getWait().until(ExpectedConditions.presenceOfElementLocated(locator));
+        WebElement el = getWait().until(ExpectedConditions.presenceOfElementLocated(locator));
+        if (!el.isDisplayed()) {
+            el = getWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
+        }
+        return el;
     }
 
     protected WebElement getClickableElement() {
-        return getWait().until(ExpectedConditions.elementToBeClickable(locator));
+        WebElement el = getWait().until(ExpectedConditions.presenceOfElementLocated(locator));
+        if (!el.isDisplayed() || !el.isEnabled()) {
+            el = getWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
+            el = getWait().until(ExpectedConditions.elementToBeClickable(locator));
+        }
+        return el;
     }
 
     private WebDriverWait getWait() {
@@ -60,9 +69,9 @@ public class BaseElement implements Element {
 
     @Override
     public void type(String text) {
-        WebElement input = getElement();
-        input.clear();
-        input.sendKeys(text);
+        WebElement el = getElement();
+        el.clear();
+        el.sendKeys(text);
     }
 
     @Override
@@ -72,7 +81,7 @@ public class BaseElement implements Element {
 
     @Override
     public void shouldHaveValue(String expected) {
-        Assert.assertEquals(getElement().getAttribute("value"), expected);
+        Assert.assertEquals(getClickableElement().getAttribute("value"), expected);
     }
 
     @Override
@@ -116,7 +125,6 @@ public class BaseElement implements Element {
             getWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
             visible = true;
         } catch (Exception e) {
-            // visible vẫn giữ giá trị false
         }
         Assert.assertTrue(visible, "Element is NOT visible: " + locator.toString());
     }
