@@ -30,6 +30,13 @@ public class OrderSuccessPage extends BasePage {
         $(statusMessage).shouldBeVisible();
     }
 
+    public void verifyOrderConfirmationMessage() {
+        String message = getStatusMessage();
+        if (!message.contains("Thank you") && !message.contains("received")) {
+            throw new AssertionError("Order confirmation message should show correctly. Actual: " + message);
+        }
+    }
+
     public String getOrderedProductName() {
         return $(orderProductName).getText();
     }

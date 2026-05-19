@@ -1,8 +1,8 @@
 package com.hoanhoang.tests;
 
 import com.hoanhoang.data.TestDataManager;
+import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.*;
-import org.testng.ITestContext;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -10,7 +10,7 @@ import java.util.Map;
 public class TC01 extends BaseTest {
 
     @Test
-    public void tc1_addRandomProductToCart(ITestContext context) {
+    public void tc1_addRandomProductToCart() {
         TestDataManager.UserCredentials user = getAssignedAccount();
 
         HomePage homePage = new HomePage();
@@ -23,6 +23,10 @@ public class TC01 extends BaseTest {
         homePage.goToLoginPage();
         loginPage.login(user.getUsername(), user.getPassword());
 
+        homePage.goToCartPage();
+        shoppingCartPage.removeAllProducts();
+
+        homePage.goToShopPage();
         electronicPage.goToCategoryElectronicPage();
 
         Map<String, String> product = electronicPage.addRandomProductToCart();
@@ -42,9 +46,11 @@ public class TC01 extends BaseTest {
         TestDataManager.BillingDetails billingInfo = TestDataManager.getBillingInfo();
 
         checkoutPage.fillBillingDetails(billingInfo);
+        checkoutPage.selectPaymentMethod(PaymentMethod.COD);
         checkoutPage.clickPlaceOrder();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
+        orderSuccessPage.verifyOrderConfirmationMessage();
         orderSuccessPage.verifyBillingName(billingInfo.getFirstName(), billingInfo.getLastName());
         orderSuccessPage.verifyOrderedProductName(product.get("name"));
         orderSuccessPage.verifyOrderedProductPrice(product.get("price"));

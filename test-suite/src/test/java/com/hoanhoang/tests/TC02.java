@@ -1,5 +1,6 @@
 package com.hoanhoang.tests;
 
+import com.hoanhoang.data.TestDataManager;
 import com.hoanhoang.pages.*;
 import org.testng.ITestContext;
 import org.testng.annotations.Test;

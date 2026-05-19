@@ -20,8 +20,9 @@ public class ElectronicPage extends BasePage {
 
         String name = new BaseElement(By.xpath(String.format(productNameXpath, index))).getText();
         String price = new BaseElement(By.xpath(String.format(productPriceXpath, index))).getText();
+        String buttonXpath = String.format(addToCardButtonXpath, index);
 
-        new BaseElement(By.xpath(String.format(addToCardButtonXpath, index))).jsClick();
+        $(By.xpath(buttonXpath)).jsClick();
 
         Map<String, String> product = new HashMap<>();
         product.put("name", name);

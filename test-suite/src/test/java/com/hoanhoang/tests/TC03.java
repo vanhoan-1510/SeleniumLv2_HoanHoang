@@ -1,5 +1,6 @@
 package com.hoanhoang.tests;
 
+import com.hoanhoang.data.TestDataManager;
 import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.*;
 import org.testng.ITestContext;

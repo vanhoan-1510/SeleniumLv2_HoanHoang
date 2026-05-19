@@ -8,7 +8,7 @@ import java.util.List;
 
 public class ShoppingCartPage extends BasePage {
 
-    By productName = By.cssSelector(".product-name");
+    By productName = By.cssSelector(".product-title");
     By productPrice = By.cssSelector("td.product-price span.woocommerce-Price-amount");
     By productQuantityField = By.xpath("//input[contains(@class,'qty') and @type='number']");
     By quantityMinusButton = By.cssSelector(".minus");
@@ -20,6 +20,15 @@ public class ShoppingCartPage extends BasePage {
     By emptyCartMessage = By.xpath("//h1[contains(text(),'YOUR SHOPPING CART IS EMPTY') or contains(text(),'Cart is empty')]");
     By updateCartButton = By.cssSelector("[name='update_cart']");
     By subTotalPrice = By.cssSelector("td.product-subtotal span.woocommerce-Price-amount");
+    By removeProductButton = By.cssSelector("a.remove");
+
+    public void removeAllProducts() {
+        int count = BaseElement.count("//a[contains(@class,'remove')]");
+        while (count > 0) {
+            $(removeProductButton).jsClick();
+            count--;
+        }
+    }
 
     public String getProductName() {
         return $(productName).getText();

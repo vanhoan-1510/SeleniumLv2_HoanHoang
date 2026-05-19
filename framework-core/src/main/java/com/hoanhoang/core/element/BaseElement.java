@@ -15,6 +15,9 @@ import java.time.Duration;
 
 public class BaseElement implements Element {
 
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    private static final int RETRY_INTERVAL_MS = 1000;
+
     protected By locator;
     protected WebElement element;
 
@@ -45,8 +48,8 @@ public class BaseElement implements Element {
 
     private WebDriverWait getWait() {
         return new WebDriverWait(
-            driver(),
-            Duration.ofSeconds(ConfigLoader.getConfig().getTimeout())
+                driver(),
+                Duration.ofSeconds(ConfigLoader.getConfig().getTimeout())
         );
     }
 
@@ -56,37 +59,55 @@ public class BaseElement implements Element {
 
     @Override
     public void click() {
-        WebElement el = getClickableElement();
-        ((JavascriptExecutor) driver()).executeScript("arguments[0].scrollIntoView({block: 'center'});", el);
-        el.click();
+        retryAction(() -> {
+            WebElement el = getClickableElement();
+            ((JavascriptExecutor) driver()).executeScript("arguments[0].scrollIntoView({block: 'center'});", el);
+            el.click();
+        });
     }
 
     @Override
     public void jsClick() {
-        WebElement el = getElement();
-        ((JavascriptExecutor) driver()).executeScript("arguments[0].click();", el);
+        retryAction(() -> {
+            WebElement el = getElement();
+            ((JavascriptExecutor) driver()).executeScript("arguments[0].click();", el);
+        });
     }
 
     @Override
     public void type(String text) {
-        WebElement el = getElement();
-        el.clear();
-        el.sendKeys(text);
+        retryAction(() -> {
+            WebElement el = getElement();
+            el.clear();
+            el.sendKeys(text);
+        });
     }
 
     @Override
     public void shouldHaveText(String expected) {
-        Assert.assertEquals(getElement().getText(), expected);
+        retryAssert(() -> {
+            String actual = getElement().getText();
+            Assert.assertEquals(actual, expected,
+                    "Text mismatch. Expected: '" + expected + "', Actual: '" + actual + "'");
+        });
     }
 
     @Override
     public void shouldHaveValue(String expected) {
-        Assert.assertEquals(getClickableElement().getAttribute("value"), expected);
+        retryAssert(() -> {
+            String actual = getClickableElement().getAttribute("value");
+            Assert.assertEquals(actual, expected,
+                    "Value mismatch. Expected: '" + expected + "', Actual: '" + actual + "'");
+        });
     }
 
     @Override
     public void shouldHave(String prop, String expected) {
-        Assert.assertEquals(getElement().getAttribute(prop), expected);
+        retryAssert(() -> {
+            String actual = getElement().getAttribute(prop);
+            Assert.assertEquals(actual, expected,
+                    "Attribute '" + prop + "' mismatch. Expected: '" + expected + "', Actual: '" + actual + "'");
+        });
     }
 
     @Override
@@ -101,11 +122,13 @@ public class BaseElement implements Element {
 
     @Override
     public void hover() {
-        WebElement el = getElement();
-        new Actions(driver())
-                .moveToElement(el)
-                .pause(Duration.ofMillis(500))
-                .perform();
+        retryAction(() -> {
+            WebElement el = getElement();
+            new Actions(driver())
+                    .moveToElement(el)
+                    .pause(Duration.ofMillis(500))
+                    .perform();
+        });
     }
 
     @Override
@@ -120,12 +143,56 @@ public class BaseElement implements Element {
 
     @Override
     public void shouldBeVisible() {
-        boolean visible = false;
-        try {
-            getWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
-            visible = true;
-        } catch (Exception e) {
+        retryAssert(() -> {
+            boolean visible = false;
+            try {
+                getWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
+                visible = true;
+            } catch (Exception e) {
+            }
+            Assert.assertTrue(visible, "Element is NOT visible: " + locator.toString());
+        });
+    }
+
+    private void retryAssert(Runnable assertion) {
+        AssertionError lastError = null;
+        for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+            try {
+                assertion.run();
+                return;
+            } catch (AssertionError e) {
+                lastError = e;
+                if (attempt < MAX_RETRY_ATTEMPTS) {
+                    try {
+                        Thread.sleep(RETRY_INTERVAL_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Thread interrupted during retry", ie);
+                    }
+                }
+            }
         }
-        Assert.assertTrue(visible, "Element is NOT visible: " + locator.toString());
+        throw lastError;
+    }
+
+    private void retryAction(Runnable action) {
+        RuntimeException lastError = null;
+        for (int attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
+            try {
+                action.run();
+                return;
+            } catch (Exception e) {
+                lastError = (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
+                if (attempt < MAX_RETRY_ATTEMPTS) {
+                    try {
+                        Thread.sleep(RETRY_INTERVAL_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Thread interrupted during retry", ie);
+                    }
+                }
+            }
+        }
+        throw lastError;
     }
 }

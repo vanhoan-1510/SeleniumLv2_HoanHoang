@@ -26,19 +26,31 @@ public class DriverFactory {
     private static WebDriver createChromeDriver(boolean headless) {
         ChromeOptions options = new ChromeOptions();
         applyCommonArguments(options, headless);
-        return new ChromeDriver(options);
+        WebDriver driver = new ChromeDriver(options);
+        maximizeWindow(driver, headless);
+        return driver;
     }
 
     private static WebDriver createFirefoxDriver(boolean headless) {
         FirefoxOptions options = new FirefoxOptions();
         if (headless) options.addArguments("-headless");
-        return new FirefoxDriver(options);
+        WebDriver driver = new FirefoxDriver(options);
+        maximizeWindow(driver, headless);
+        return driver;
     }
 
     private static WebDriver createEdgeDriver(boolean headless) {
         EdgeOptions options = new EdgeOptions();
         applyCommonArguments(options, headless);
-        return new EdgeDriver(options);
+        WebDriver driver = new EdgeDriver(options);
+        maximizeWindow(driver, headless);
+        return driver;
+    }
+
+    private static void maximizeWindow(WebDriver driver, boolean headless) {
+        if (!headless) {
+            driver.manage().window().maximize();
+        }
     }
 
     private static String[] getCommonArguments(boolean headless) {
