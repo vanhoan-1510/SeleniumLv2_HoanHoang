@@ -9,6 +9,7 @@ public class AccountPool {
     private static final List<UserCredentials> accounts;
     private static final Set<Integer> inUseAccounts = Collections.synchronizedSet(new HashSet<>());
     private static final AtomicBoolean initialized = new AtomicBoolean(false);
+    private static final int DEFAULT_WAIT_TIMEOUT_SECONDS = 60;
 
     static {
         List<UserCredentials> loadedAccounts = new ArrayList<>();
@@ -57,6 +58,29 @@ public class AccountPool {
 
     public static boolean hasAvailableAccount() {
         return getAvailableAccountCount() > 0;
+    }
+
+    public static UserCredentials waitForAvailableAccount() {
+        return waitForAvailableAccount(DEFAULT_WAIT_TIMEOUT_SECONDS);
+    }
+
+    public static UserCredentials waitForAvailableAccount(int timeoutSeconds) {
+        long startTime = System.currentTimeMillis();
+        long timeoutMillis = timeoutSeconds * 1000L;
+
+        while (System.currentTimeMillis() - startTime < timeoutMillis) {
+            UserCredentials account = getAvailableAccount();
+            if (account != null) {
+                return account;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return null;
     }
 
     public static void reset() {

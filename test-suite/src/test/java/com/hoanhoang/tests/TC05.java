@@ -2,17 +2,16 @@ package com.hoanhoang.tests;
 
 import com.hoanhoang.pages.MyAccountPage;
 import com.hoanhoang.pages.OrderHistoryPage;
-import org.testng.ITestContext;
 import org.testng.annotations.BeforeMethod;
+import org.testng.ITestResult;
 import org.testng.annotations.Test;
 
 public class TC05 extends BaseTest {
 
     @BeforeMethod
     @Override
-    public void setUp(ITestContext context) {
-        super.setUp(context);
-
+    public void setUp(ITestResult result) {
+        super.setUp(result);
         createOrder();
         createOrder();
     }

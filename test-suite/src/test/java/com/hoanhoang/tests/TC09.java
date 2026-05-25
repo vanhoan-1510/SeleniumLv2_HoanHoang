@@ -45,7 +45,7 @@ public class TC09 extends BaseTest {
             throw new AssertionError("Sub total should update after manual update");
         }
 
-        cartPage.clickQuantityButton();
+        cartPage.clickQuantityMinusButton();
 
         String afterMinusQty = cartPage.getProductQuantityField();
         String afterMinusSubTotal = cartPage.getSubTotalPrice();

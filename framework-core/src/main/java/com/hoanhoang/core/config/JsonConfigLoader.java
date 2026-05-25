@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 /**
  * Loads framework configuration from JSON files.
@@ -29,9 +27,20 @@ public class JsonConfigLoader {
      * @throws ConfigLoadException if file not found or parsing fails
      */
     public static EnvironmentConfig loadFromJson(String env) {
-        String jsonPath = FrameworkConstants.CONFIG_DIR + env + ".json";
+        String resourcePath = FrameworkConstants.CONFIG_DIR + env + ".json";
 
-        try (InputStream is = Files.newInputStream(Paths.get(jsonPath))) {
+        try (InputStream is = JsonConfigLoader.class.getClassLoader()
+                .getResourceAsStream(resourcePath)) {
+
+            if (is == null) {
+                throw new ConfigLoadException(
+                    env,
+                    "Config file not found in classpath: " + resourcePath + "\n" +
+                    "Please create this file in src/test/resources/config/ folder",
+                    null
+                );
+            }
+
             JsonObject json = gson.fromJson(new InputStreamReader(is, StandardCharsets.UTF_8), JsonObject.class);
 
             // Validate required fields
@@ -59,7 +68,7 @@ public class JsonConfigLoader {
         } catch (IOException e) {
             throw new ConfigLoadException(
                 env,
-                "Failed to load config file: " + jsonPath + ". " + e.getMessage(),
+                "Failed to load config file: " + resourcePath + ". " + e.getMessage(),
                 e
             );
         }

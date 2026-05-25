@@ -20,7 +20,7 @@ public class ShoppingCartPage extends BasePage {
     By emptyCartMessage = By.xpath("//h1[contains(text(),'YOUR SHOPPING CART IS EMPTY') or contains(text(),'Cart is empty')]");
     By updateCartButton = By.cssSelector("[name='update_cart']");
     By subTotalPrice = By.cssSelector("td.product-subtotal span.woocommerce-Price-amount");
-    By removeProductButton = By.cssSelector("a.remove");
+    By removeProductButton = By.xpath("//a[contains(@class,'remove-item')]");
 
     public void removeAllProducts() {
         int count = BaseElement.count("//a[contains(@class,'remove')]");
@@ -86,7 +86,7 @@ public class ShoppingCartPage extends BasePage {
         }
     }
 
-    public void clickQuantityButton() {
+    public void clickQuantityMinusButton() {
         $(quantityMinusButton).click();
     }
 
