@@ -134,10 +134,9 @@ public class TestDataManager {
         public String getPhone() { return phone; }
     }
 
-    // Thêm hàm load billing info
     public static BillingDetails loadBillingInfo(String billingType) {
         try (InputStream is = TestDataManager.class.getClassLoader()
-                .getResourceAsStream("data/test-credentials.json")) { // Hoặc file JSON khác của bạn
+                .getResourceAsStream("data/test-credentials.json")) {
 
             if (is == null) {
                 throw new ConfigLoadException(billingType, "Test data file not found", null);
@@ -164,8 +163,40 @@ public class TestDataManager {
         }
     }
 
-    // Hàm tiện ích gọi nhanh
     public static BillingDetails getBillingInfo() {
-        return loadBillingInfo("validBilling"); // Tên key trong file JSON
+        return loadBillingInfo("validBilling");
+    }
+
+    public static class ReviewData {
+        private final String name;
+        private final String email;
+
+        public ReviewData(String name, String email) {
+            this.name = name;
+            this.email = email;
+        }
+
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+    }
+
+    public static ReviewData getReviewData() {
+        try (InputStream is = TestDataManager.class.getClassLoader()
+                .getResourceAsStream("data/test-review.json")) {
+
+            if (is == null) {
+                throw new ConfigLoadException("reviewData", "Test review data file not found", null);
+            }
+
+            JsonObject json = gson.fromJson(new InputStreamReader(is, StandardCharsets.UTF_8), JsonObject.class);
+            JsonObject reviewJson = json.getAsJsonObject("reviewData");
+
+            String name = reviewJson.get("name").getAsString();
+            String email = reviewJson.get("email").getAsString();
+
+            return new ReviewData(name, email);
+        } catch (IOException e) {
+            throw new ConfigLoadException("reviewData", "Failed to load review data: " + e.getMessage(), e);
+        }
     }
 }

@@ -1,10 +1,9 @@
 package com.hoanhoang.tests;
 
 import com.hoanhoang.data.TestDataManager;
+import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.*;
-import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.testng.asserts.SoftAssert;
 
 import java.util.Map;
 
@@ -12,8 +11,7 @@ public class TC01 extends BaseTest {
 
     @Test
     public void tc1_addRandomProductToCart() {
-        SoftAssert softAssert = new SoftAssert();
-        TestDataManager.UserCredentials user = TestDataManager.getValidCredentials();
+        TestDataManager.UserCredentials user = getAssignedAccount();
 
         HomePage homePage = new HomePage();
         LoginPage loginPage = new LoginPage();
@@ -24,38 +22,37 @@ public class TC01 extends BaseTest {
 
         homePage.goToLoginPage();
         loginPage.login(user.getUsername(), user.getPassword());
+
+        homePage.goToCartPage();
+        shoppingCartPage.removeAllProducts();
+
+        homePage.goToShopPage();
         electronicPage.goToCategoryElectronicPage();
 
         Map<String, String> product = electronicPage.addRandomProductToCart();
 
-        electronicPage.goToProductCardPage();
+        electronicPage.goToCartPage();
 
-        softAssert.assertEquals(shoppingCartPage.getProductName(), product.get("name"), "Product name in cart does not match the added product.");
-        softAssert.assertEquals(shoppingCartPage.getProductPrice(), product.get("price"), "Product price in cart does not match the added product.");
-        softAssert.assertEquals(shoppingCartPage.getProductQuantityField(), "1", "Product quantity in cart should be 1 after adding to cart.");
+        shoppingCartPage.verifyProductName(product.get("name"));
+        shoppingCartPage.verifyProductPrice(product.get("price"));
+        shoppingCartPage.verifyProductQuantity("1");
 
         shoppingCartPage.clickCheckoutButton();
 
-        softAssert.assertTrue(checkoutPage.isCheckoutHeadingVisible(), "Checkout page should be displayed after clicking checkout button.");
-
-        softAssert.assertEquals(checkoutPage.getOrderProductName(), product.get("name"), "Item name in checkout order does not match.");
-        softAssert.assertEquals(checkoutPage.getOrderProductPrice(), product.get("price"), "Item price in checkout order does not match.");
+        checkoutPage.verifyCheckoutHeadingVisible();
+        checkoutPage.verifyOrderProductName(product.get("name"));
+        checkoutPage.verifyOrderProductPrice(product.get("price"));
 
         TestDataManager.BillingDetails billingInfo = TestDataManager.getBillingInfo();
 
         checkoutPage.fillBillingDetails(billingInfo);
-
+        checkoutPage.selectPaymentMethod(PaymentMethod.COD);
         checkoutPage.clickPlaceOrder();
 
-        softAssert.assertTrue(orderSuccessPage.isOrderSuccessHeadingVisible(), "Order Status page should be displayed after placing order.");
-
-        softAssert.assertTrue(orderSuccessPage.getBillingName().contains(billingInfo.getFirstName()) &&
-                        orderSuccessPage.getBillingName().contains(billingInfo.getLastName()),
-                "Billing name on order does not match.");
-
-        softAssert.assertEquals(orderSuccessPage.getOrderedProductName(), product.get("name"), "Ordered item name on success page does not match.");
-        softAssert.assertEquals(orderSuccessPage.getOrderedProductPrice(), product.get("price"), "Ordered item price on success page does not match.");
-
-        softAssert.assertAll();
+        orderSuccessPage.verifyOrderSuccessHeadingVisible();
+        orderSuccessPage.verifyOrderConfirmationMessage();
+        orderSuccessPage.verifyBillingName(billingInfo.getFirstName(), billingInfo.getLastName());
+        orderSuccessPage.verifyOrderedProductName(product.get("name"));
+        orderSuccessPage.verifyOrderedProductPrice(product.get("price"));
     }
 }

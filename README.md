@@ -1,39 +1,40 @@
-# Selenium Automation Framework
+# Selenium Automation Framework - TestArchitect Demo
 
-A robust Java-based test automation framework using Selenium 4, TestNG, and Allure Report.
+[![Java](https://img.shields.io/badge/Java-11-orange?logo=java&logoColor=white)](https://www.oracle.com/java/)
+[![Maven](https://img.shields.io/badge/Maven-3.8+-red?logo=apache-maven&logoColor=white)](https://maven.apache.org/)
+[![Selenium](https://img.shields.io/badge/Selenium-4.18.1-green?logo=selenium&logoColor=white)](https://www.selenium.dev/)
+[![TestNG](https://img.shields.io/badge/TestNG-7.9.0-blue?logo=testng&logoColor=white)](https://testng.org/)
+[![Allure](https://img.shields.io/badge/Allure-2.25.0-purple?logo=allure&logoColor=white)](https://docs.qameta.io/allure/)
+[![Log4j](https://img.shields.io/badge/Log4j-2.25.3-blue?logo=apache-log4j&logoColor=white)](https://logging.apache.org/log4j/2.x/)
+
+A robust Java-based test automation framework using Selenium 4, TestNG, and Allure Report for testing the TestArchitect demo website.
 
 ## 🚀 Features
 
 - **Multi-browser support**: Chrome, Firefox, Edge
 - **Page Object Model**: Clean and maintainable test architecture
-- **Data-driven testing**: JSON data models and builders
+- **Data-driven testing**: JSON data models and TestDataManager
 - **Allure Reports**: Beautiful HTML test reports with screenshots
 - **Environment configuration**: Easy switching between dev, staging, prod
 - **Headless mode**: Run tests without GUI for CI/CD
 - **Parallel execution**: TestNG support for parallel testing
+- **Account Pool**: Manage multiple test accounts for concurrent execution
+- **Multiple Payment Methods**: Support for Bank Transfer, Cheque, and COD
 
-## 🛠 Tech Stack
+## 📋 Test Cases
 
-- **Java 11+**
-- **Selenium 4.18.1**
-- **TestNG 7.9.0**
-- **Allure Report 2.25.0**
-- **Maven 3.8+**
-- **Log4j2** for logging
-- **Gson** for JSON handling
-
-## 📋 Prerequisites
-
-1. **Java 11+** installed and configured
-   ```bash
-   java -version
-   ```
-2. **Maven 3.8+** installed
-   ```bash
-   mvn -version
-   ```
-3. **Chrome browser** (latest version)
-4. **ChromeDriver** (automatically managed by Selenium Manager)
+| TC | Description | Precondition |
+|----|-------------|--------------|
+| TC01 | Buy an item successfully | User logged in |
+| TC02 | Buy multiple items successfully | User logged in |
+| TC03 | Buy with different payment methods (Bank Transfer, Cheque, COD) | User logged in |
+| TC04 | Sort items by price (low to high, high to low) | User logged in |
+| TC05 | Verify orders appear in order history | User placed 2 orders |
+| TC06 | Buy item as guest (grid/list view) | User NOT logged in |
+| TC07 | Error handling when mandatory fields are blank | User at checkout |
+| TC08 | Clear the shopping cart | Items in cart |
+| TC09 | Update product quantity in cart | Item in cart |
+| TC10 | Post a review for a product | User logged in |
 
 ## 📦 Project Structure
 
@@ -41,50 +42,40 @@ A robust Java-based test automation framework using Selenium 4, TestNG, and Allu
 SeleniumLv2_HoanHoang/
 ├── framework-core/              # Core framework components
 │   ├── config/                  # Configuration management
-│   │   ├── ConfigLoader.java    # Load environment configs
-│   │   └── EnvironmentConfig.java  # Config model
 │   ├── driver/                  # WebDriver management
-│   │   ├── DriverFactory.java   # Create WebDriver instances
-│   │   ├── DriverManager.java   # Thread-safe driver storage
-│   │   └── BrowserType.java     # Browser enum
 │   └── element/                 # Element wrappers
-│       ├── BaseElement.java     # Enhanced WebElement wrapper
-│       ├── Element.java         # WebElement interface
-│       └── ElementFactory.java  # Create element wrappers
 │
 ├── framework-data/              # Data management
 │   ├── model/                   # Data models
-│   │   └── UserDto.java         # User data model
 │   ├── builder/                 # Builder pattern
-│   │   └── UserBuilder.java     # Build test data
-│   ├── constant/                # Constants
-│   │   └── AppConstant.java     # Application constants
-│   └── util/                    # Utilities
-│       └── JsonMapper.java      # JSON conversion
+│   ├── constant/                # Constants (PaymentMethod)
+│   ├── util/                    # Utilities
+│   ├── AccountPool.java         # Account pool management
+│   └── TestDataManager.java     # Load test data from JSON
 │
 ├── framework-report/            # Reporting
 │   ├── allure/                  # Allure integration
-│   │   └── AllureManager.java   # Screenshot, video, logs
 │   ├── listener/                # TestNG listeners
-│   │   └── TestListener.java    # Test lifecycle hooks
 │   └── logger/                  # Logging
-│       └── Log.java             # Log4j2 wrapper
 │
 └── test-suite/                  # Test implementations
-    ├── src/test/
-    │   ├── java/
-    │   │   ├── pages/           # Page Object Model
-    │   │   │   └── BasePage.java
-    │   │   └── tests/           # Test classes
-    │   │       ├── BaseTest.java    # Test setup/teardown
-    │   │       └── LoginTest.java   # Example test
-    │   └── resources/
-    │       ├── config/         # Environment configs
-    │       │   ├── dev.properties
-    │       │   ├── staging.properties
-    │       │   └── sample.properties
-    │       └── testng.xml      # Test suite config
-    └── pom.xml
+    ├── src/main/java/pages/     # Page Object Model
+    │   ├── BasePage.java
+    │   ├── HomePage.java
+    │   ├── LoginPage.java
+    │   ├── ShopPage.java
+    │   ├── ProductDetailPage.java
+    │   ├── ShoppingCartPage.java
+    │   ├── CheckoutPage.java
+    │   ├── OrderSuccessPage.java
+    │   ├── MyAccountPage.java
+    │   └── OrderHistoryPage.java
+    ├── src/test/java/tests/     # Test classes
+    │   ├── BaseTest.java
+    │   ├── TC01.java to TC10.java
+    └── src/test/resources/
+        ├── data/                # Test data JSON files
+        └── testng.xml           # Test suite config
 ```
 
 ## 🏗 Setup
@@ -95,25 +86,42 @@ git clone https://github.com/vanhoan-1510/SeleniumLv2_HoanHoang
 cd SeleniumLv2_HoanHoang
 ```
 
-### 2. Build the project
+### 2. Configure test data
+
+Edit `test-suite/src/test/resources/data/test-credentials.json`:
+```json
+{
+  "validUser1": {
+    "username": "user1@testarchitect.com",
+    "password": "password123"
+  },
+  "billingDetails": {
+    "firstName": "Test",
+    "lastName": "User",
+    "email": "test.user@example.com",
+    "phone": "0123456789",
+    "address": "123 Test Street",
+    "city": "Test City",
+    "state": "TS",
+    "postcode": "10000",
+    "country": "Test Country"
+  }
+}
+```
+
+Edit `test-suite/src/test/resources/data/test-review.json`:
+```json
+{
+  "reviewData": {
+    "name": "Test Reviewer",
+    "email": "reviewer@example.com"
+  }
+}
+```
+
+### 3. Build the project
 ```bash
 mvn clean install
-```
-
-### 3. Configure environment
-
-Copy the sample config and customize:
-```bash
-cp test-suite/src/test/resources/config/sample.properties \
-   test-suite/src/test/resources/config/dev.properties
-```
-
-Edit `dev.properties`:
-```properties
-baseUrl=https://your-application-url.com
-browser=chrome
-headless=false
-timeout=30
 ```
 
 ### 4. Install Allure CLI (optional, for viewing reports)
@@ -122,7 +130,6 @@ timeout=30
 ```bash
 scoop install allure
 ```
-or download from: https://docs.qameta.io/allure/#_installing_a_commandline
 
 **Mac:**
 ```bash
@@ -136,30 +143,29 @@ sudo apt-get install allure
 
 ## 🎯 How to Run Tests
 
-### Run all tests (default environment: dev)
+### Run all tests
 ```bash
-cd test-suite
 mvn clean test
 ```
 
-### Run tests for specific environment
+### Run specific test case
 ```bash
-mvn clean test -Denv=staging
-mvn clean test -Denv=prod
+mvn test -Dtest=TC01
+mvn test -Dtest=TC02
+mvn test -Dtest=TC03
+mvn test -Dtest=TC04
+mvn test -Dtest=TC05
+mvn test -Dtest=TC06
+mvn test -Dtest=TC07
+mvn test -Dtest=TC08
+mvn test -Dtest=TC09
+mvn test -Dtest=TC10
 ```
 
-### Run specific test class
+### Run multiple test cases
 ```bash
-mvn test -Dtest=LoginTest
+mvn test -Dtest=TC01,TC02,TC03
 ```
-
-### Run specific test method
-```bash
-mvn test -Dtest=LoginTest#testValidLogin
-```
-
-### Run tests in headless mode
-Set in config file: `headless=true`
 
 ### Run tests from IDE
 - Open `test-suite/src/test/resources/testng.xml`
@@ -169,48 +175,28 @@ Set in config file: `headless=true`
 
 ### Generate and open Allure report
 ```bash
-cd test-suite
 mvn allure:report
-allure open target/allure-results
+allure open target/allure-report
 ```
-
-### Generate report only
-```bash
-mvn allure:report
-```
-Report will be in: `test-suite/target/allure-report/index.html`
 
 ### View history of reports
 ```bash
 allure serve target/allure-results
 ```
-This starts a local server and opens the report in browser.
 
 ## ⚙️ Configuration
 
 ### Browser Options
-Available browsers in `BrowserType.java`:
-- `chrome`
-- `firefox`
-- `edge`
-
-Set in config file:
-```properties
-browser=chrome
+```bash
+mvn test -Dbrowser=chrome
+mvn test -Dbrowser=firefox
+mvn test -Dbrowser=edge
 ```
 
 ### Headless Mode
-```properties
-headless=true
+```bash
+mvn test -Dheadless=true
 ```
-Useful for CI/CD pipelines.
-
-### Timeout
-Default wait time for explicit waits:
-```properties
-timeout=30
-```
-Recommended: 10-60 seconds depending on application.
 
 ## ✍️ Writing New Tests
 
@@ -218,19 +204,16 @@ Recommended: 10-60 seconds depending on application.
 ```java
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 
-public class LoginPage extends BasePage {
+public class NewPage extends BasePage {
     
-    private final BaseElement usernameField = new BaseElement(By.id("username"));
-    private final BaseElement passwordField = new BaseElement(By.id("password"));
-    private final BaseElement loginButton = new BaseElement(By.cssSelector("button[type='submit']"));
+    By usernameField = By.id("username");
+    By submitButton = By.cssSelector("button[type='submit']");
     
-    public void login(String username, String password) {
-        usernameField.sendKeys(username);
-        passwordField.sendKeys(password);
-        loginButton.click();
+    public void submitForm(String username) {
+        $(usernameField).type(username);
+        $(submitButton).click();
     }
 }
 ```
@@ -239,56 +222,31 @@ public class LoginPage extends BasePage {
 ```java
 package com.hoanhoang.tests;
 
-import com.hoanhoang.pages.LoginPage;
+import com.hoanhoang.pages.NewPage;
+import org.testng.ITestContext;
 import org.testng.annotations.Test;
 
-public class LoginTest extends BaseTest {
+public class NewTest extends BaseTest {
     
     @Test
-    public void testValidLogin() {
-        LoginPage loginPage = new LoginPage();
-        loginPage.login("testuser", "password123");
+    public void testNewFeature(ITestContext context) {
+        NewPage newPage = new NewPage();
+        newPage.submitForm("testuser");
         // Add assertions here
     }
 }
 ```
 
-### 3. Add to testng.xml
-```xml
-<test name="Authentication Tests">
-    <classes>
-        <class name="com.hoanhoang.tests.LoginTest"/>
-    </classes>
-</test>
-```
-
-### 4. Run your test
-```bash
-mvn test -Dtest=LoginTest
-```
-
-## 📁 Environment Configurations
-
-Create environment-specific configs in `test-suite/src/test/resources/config/`:
-
-- `dev.properties` - Development environment
-- `staging.properties` - Staging environment
-- `prod.properties` - Production environment
-
-Run with specific environment:
-```bash
-mvn test -Denv=staging
-```
-
 ## 🔄 Git Workflow
 
-### Branch Naming
-- `feature/feature-name` - New features
-- `fix/bug-description` - Bug fixes
-- `chore/task-description` - Maintenance tasks
+### Branch Strategy
+- `main` - Production code
+- `develop` - Development branch (current working branch)
+- `feature/*` - New features
+- `fix/*` - Bug fixes
 
 ### Workflow
-1. Create branch from `develop`
+1. Create feature branch from `develop`
    ```bash
    git checkout develop
    git pull origin develop
@@ -301,21 +259,12 @@ mvn test -Denv=staging
    git commit -m "feat: add new feature"
    ```
 
-3. Push to remote
+3. Push and create Pull Request
    ```bash
    git push origin feature/my-feature
    ```
 
-4. Create Pull Request to `develop`
-   - Request code review
-   - Fix any issues
-   - Merge after approval
-
-5. Update local `develop`
-   ```bash
-   git checkout develop
-   git pull origin develop
-   ```
+4. Request review at: thuong.dang@agest.vn
 
 ## 🐛 Troubleshooting
 
@@ -323,7 +272,7 @@ mvn test -Denv=staging
 Ensure Chrome browser is installed. Selenium Manager will automatically download the correct ChromeDriver.
 
 ### Tests fail with "Element not found"
-- Increase timeout in config file
+- Increase timeout in config
 - Check if selectors are correct
 - Verify element is not in an iframe
 
@@ -332,14 +281,13 @@ Ensure Chrome browser is installed. Selenium Manager will automatically download
 - Check `target/allure-results` folder
 - Verify Allure TestNG listener is configured
 
-### Config file not found
-- Ensure config file exists in `test-suite/src/test/resources/config/`
-- Use correct `-Denv` parameter
-- Check file name matches environment name
-
 ## 📚 Additional Resources
 
 - [Selenium Documentation](https://www.selenium.dev/documentation/)
 - [TestNG Documentation](https://testng.org/doc/)
 - [Allure Report](https://docs.qameta.io/allure/)
 - [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged_page_object_models/)
+
+## 📝 License
+
+This project is for learning and demonstration purposes.
