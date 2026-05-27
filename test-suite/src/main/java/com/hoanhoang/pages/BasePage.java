@@ -2,6 +2,8 @@ package com.hoanhoang.pages;
 
 import com.hoanhoang.core.element.Element;
 import com.hoanhoang.core.element.ElementFactory;
+import com.hoanhoang.core.element.Elements;
+import com.hoanhoang.core.element.ElementsFactory;
 import org.openqa.selenium.By;
 
 public class BasePage {
@@ -18,6 +20,10 @@ public class BasePage {
 
     protected Element $(By locator) {
         return ElementFactory.$(locator);
+    }
+
+    protected Elements $$(By locator) {
+        return ElementsFactory.$$(locator);
     }
 
     public void goToLoginPage() {

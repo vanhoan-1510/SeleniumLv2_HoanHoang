@@ -114,6 +114,15 @@ public class BaseElement implements Element {
     }
 
     @Override
+    public void shouldContainText(String expected) {
+        retryAssert(() -> {
+            String actual = getVisibleElement().getText();
+            Assert.assertTrue(actual.contains(expected),
+                    "Text should contain: '" + expected + "', Actual: '" + actual + "'");
+        });
+    }
+
+    @Override
     public void shouldHaveValue(String expected) {
         retryAssert(() -> {
             String actual = getClickableElement().getAttribute("value");

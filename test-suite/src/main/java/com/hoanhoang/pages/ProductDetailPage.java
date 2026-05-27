@@ -1,6 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -26,7 +25,7 @@ public class ProductDetailPage extends BasePage {
     public void selectRandomStarRating() {
         int rating = new Random().nextInt(5) + 1;
         By starLocator = By.cssSelector("input[type='radio'][value='" + rating + "']");
-        new BaseElement(starLocator).click();
+        $(starLocator).click();
     }
 
     public void enterReviewName(String name) {
@@ -51,11 +50,11 @@ public class ProductDetailPage extends BasePage {
     }
 
     public int getReviewCount() {
-        return BaseElement.count("//div[@class='comment-list']//li");
+        return $$(By.xpath("//div[@class='comment-list']//li")).size();
     }
 
     public boolean isLatestReviewDisplayed(String comment) {
         By latestReview = By.xpath("//div[@class='comment-list']//p[contains(text(),'" + comment + "')]");
-        return new BaseElement(latestReview).isVisible();
+        return $(latestReview).isVisible();
     }
 }

@@ -4,8 +4,6 @@ import com.hoanhoang.data.TestDataManager;
 import com.hoanhoang.data.constant.PaymentMethod;
 import org.openqa.selenium.By;
 
-import java.util.Map;
-
 public class CheckoutPage extends BasePage {
 
     By checkoutHeading = By.xpath("//a[contains(@href,'checkout') and contains(@class,'active')]");
@@ -26,7 +24,7 @@ public class CheckoutPage extends BasePage {
     By lastNameError = By.cssSelector("li[data-id='billing_last_name']");
     By addressError = By.cssSelector("li[data-id='billing_address_1']");
     By cityError = By.cssSelector("li[data-id='billing_city']");
-    By postcodeError = By.cssSelector("");
+    By postcodeError = By.cssSelector("li[data-id='billing_postcode']");
     By phoneError = By.cssSelector("li[data-id='billing_phone']");
 
     public boolean isCheckoutHeadingVisible() {
@@ -82,29 +80,16 @@ public class CheckoutPage extends BasePage {
     }
 
     public void verifyOrderProduct(String expectedName, String expectedPrice) {
-        String actualName = getOrderProductName();
-        String actualPrice = getOrderProductPrice();
-
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Order product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Order product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(orderProductName).shouldHaveText(expectedName);
+        $(orderTotalPrice).shouldHaveText(expectedPrice);
     }
 
     public void verifyOrderProductName(String expectedName) {
-        String actualName = getOrderProductName();
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Order product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
+        $(orderProductName).shouldHaveText(expectedName);
     }
 
     public void verifyOrderProductPrice(String expectedPrice) {
-        String actualPrice = getOrderProductPrice();
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Order product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(orderTotalPrice).shouldHaveText(expectedPrice);
     }
 
     public boolean isErrorMessageDisplayed() {
@@ -144,10 +129,10 @@ public class CheckoutPage extends BasePage {
     }
 
     public void verifyRequiredFieldErrorsVisible() {
-        if (!isFirstNameErrorVisible() || !isLastNameErrorVisible() ||
-            !isAddressErrorVisible() || !isCityErrorVisible() ||
-            !isPostcodeErrorVisible() || !isPhoneErrorVisible()) {
-            throw new AssertionError("All required field error messages should be visible");
-        }
+        $(firstNameError).shouldBeVisible();
+        $(lastNameError).shouldBeVisible();
+        $(addressError).shouldBeVisible();
+        $(cityError).shouldBeVisible();
+        $(phoneError).shouldBeVisible();
     }
 }

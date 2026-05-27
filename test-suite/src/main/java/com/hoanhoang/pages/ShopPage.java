@@ -1,6 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 
 import java.math.BigDecimal;
@@ -29,8 +28,7 @@ public class ShopPage extends BasePage {
     By productList = By.xpath("//div[contains(@class,'products-list')]");
 
     public List<Map<String, String>> addMultipleRandomProductsToCart() {
-        String containerXpath = "//div[contains(@class,'content-product')]";
-        int totalProducts = BaseElement.count(containerXpath);
+        int totalProducts = $$(By.xpath("//div[contains(@class,'content-product')]")).size();
 
         int numberOfProductsToAdd = new Random().nextInt(4) + 2;
 
@@ -43,10 +41,10 @@ public class ShopPage extends BasePage {
         List<Map<String, String>> products = new ArrayList<>();
 
         for (int index : selectedIndexes) {
-            String name = new BaseElement(By.xpath(String.format(productNameXpath, index))).getText();
-            String price = new BaseElement(By.xpath(String.format(productPriceXpath, index))).getText();
+            String name = $(By.xpath(String.format(productNameXpath, index))).getText();
+            String price = $(By.xpath(String.format(productPriceXpath, index))).getText();
 
-            new BaseElement(By.xpath(String.format(addToCardButtonXpath, index))).jsClick();
+            $(By.xpath(String.format(addToCardButtonXpath, index))).jsClick();
 
             Map<String, String> product = new HashMap<>();
             product.put("name", name);
@@ -67,10 +65,10 @@ public class ShopPage extends BasePage {
 
     public List<BigDecimal> getAllProductPrices() {
         List<BigDecimal> prices = new ArrayList<>();
-        int count = BaseElement.count("//div[contains(@class,'content-product')]");
+        int count = $$(By.xpath("//div[contains(@class,'content-product')]")).size();
         for (int i = 1; i <= count; i++) {
             String xpath = String.format(productPriceXpath, i);
-            String priceText = new BaseElement(By.xpath(xpath)).getText();
+            String priceText = $(By.xpath(xpath)).getText();
             BigDecimal price = parsePrice(priceText);
             prices.add(price);
         }
@@ -137,11 +135,11 @@ public class ShopPage extends BasePage {
     }
 
     public void addFirstProductToCart() {
-        new BaseElement(By.xpath(String.format(addToCardButtonXpath, 1))).jsClick();
+        $(By.xpath(String.format(addToCardButtonXpath, 1))).jsClick();
     }
 
     public void clickFirstProduct() {
         By firstProductLink = By.xpath(String.format("(//div[contains(@class,'content-product')])[1]//h2[contains(@class,'product-title')]//a"));
-        new BaseElement(firstProductLink).click();
+        $(firstProductLink).click();
     }
 }

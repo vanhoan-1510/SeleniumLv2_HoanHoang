@@ -1,6 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 
 public class OrderHistoryPage extends BasePage {
@@ -28,7 +27,7 @@ public class OrderHistoryPage extends BasePage {
     }
 
     public int getOrderCount() {
-        return BaseElement.count("//tr[parent::tbody]");
+        return $$(By.xpath("//tr[parent::tbody]")).size();
     }
 
     public boolean isOrderRowVisible(int index) {

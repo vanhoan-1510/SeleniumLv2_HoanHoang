@@ -1,7 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.Element;
-import com.hoanhoang.core.element.ElementFactory;
 import org.openqa.selenium.By;
 
 public class OrderSuccessPage extends BasePage {
@@ -15,12 +13,6 @@ public class OrderSuccessPage extends BasePage {
     By orderProductQty = By.xpath("//td[contains(@class,'product-name')]//strong");
     By orderProductPrice = By.cssSelector("//td[contains(@class,'product-total')]//span");
     By billingName = By.xpath("//h2[normalize-space()='Billing address']/following-sibling::address");
-    By billingPhone = By.xpath("//h2[normalize-space()='Billing address']/following-sibling::address//span[contains(text(),'Phone')] | //h2[normalize-space()='Billing address']/following-sibling::address//li[contains(text(),'Phone')]");
-    By billingEmail = By.xpath("//h2[normalize-space()='Billing address']/following-sibling::address//span[contains(text(),'Email')] | //h2[normalize-space()='Billing address']/following-sibling::address//li[contains(text(),'Email')]");
-
-    protected Element $(By locator) {
-        return ElementFactory.$(locator);
-    }
 
     public boolean isOrderSuccessHeadingVisible() {
         return $(statusMessage).isVisible();
@@ -31,10 +23,7 @@ public class OrderSuccessPage extends BasePage {
     }
 
     public void verifyOrderConfirmationMessage() {
-        String message = getStatusMessage();
-        if (!message.contains("Thank you") && !message.contains("received")) {
-            throw new AssertionError("Order confirmation message should show correctly. Actual: " + message);
-        }
+        $(statusMessage).shouldContainText("Thank you");
     }
 
     public String getOrderedProductName() {
@@ -50,36 +39,21 @@ public class OrderSuccessPage extends BasePage {
     }
 
     public void verifyOrderedProduct(String expectedName, String expectedPrice) {
-        String actualName = getOrderedProductName();
-        String actualPrice = getOrderedProductPrice();
-
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Ordered product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Ordered product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(orderProductName).shouldHaveText(expectedName);
+        $(orderProductPrice).shouldHaveText(expectedPrice);
     }
 
     public void verifyOrderedProductName(String expectedName) {
-        String actualName = getOrderedProductName();
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Ordered product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
+        $(orderProductName).shouldHaveText(expectedName);
     }
 
     public void verifyOrderedProductPrice(String expectedPrice) {
-        String actualPrice = getOrderedProductPrice();
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Ordered product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(orderProductPrice).shouldHaveText(expectedPrice);
     }
 
     public void verifyBillingName(String expectedFirstName, String expectedLastName) {
-        String actualName = getBillingName();
-        if (!actualName.contains(expectedFirstName) || !actualName.contains(expectedLastName)) {
-            throw new AssertionError("Billing name mismatch. Expected to contain: " + expectedFirstName + " " + expectedLastName + ", Actual: " + actualName);
-        }
+        $(billingName).shouldContainText(expectedFirstName);
+        $(billingName).shouldContainText(expectedLastName);
     }
 
     public void verifyOrderDetailsContain(String expectedName, String expectedPrice, String expectedFirstName, String expectedLastName) {
@@ -110,13 +84,5 @@ public class OrderSuccessPage extends BasePage {
 
     public String getOrderProductQty() {
         return $(orderProductQty).getText();
-    }
-
-    public String getBillingPhone() {
-        return $(billingPhone).getText();
-    }
-
-    public String getBillingEmail() {
-        return $(billingEmail).getText();
     }
 }

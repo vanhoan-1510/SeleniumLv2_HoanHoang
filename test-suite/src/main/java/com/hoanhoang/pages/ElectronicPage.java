@@ -1,6 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 
 import java.util.HashMap;
@@ -14,12 +13,11 @@ public class ElectronicPage extends BasePage {
     public String addToCardButtonXpath = "(//a[contains(.,'Add to cart')])[%s]";
 
     public Map<String, String> addRandomProductToCart() {
-        String containerXpath = "//div[contains(@class,'content-product')]";
-        int total = BaseElement.count(containerXpath);
+        int total = $$(By.xpath("//div[contains(@class,'content-product')]")).size();
         int index = new Random().nextInt(total) + 1;
 
-        String name = new BaseElement(By.xpath(String.format(productNameXpath, index))).getText();
-        String price = new BaseElement(By.xpath(String.format(productPriceXpath, index))).getText();
+        String name = $(By.xpath(String.format(productNameXpath, index))).getText();
+        String price = $(By.xpath(String.format(productPriceXpath, index))).getText();
         String buttonXpath = String.format(addToCardButtonXpath, index);
 
         $(By.xpath(buttonXpath)).jsClick();

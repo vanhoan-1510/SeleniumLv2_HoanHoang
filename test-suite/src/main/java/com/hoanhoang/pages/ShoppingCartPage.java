@@ -1,6 +1,5 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.element.BaseElement;
 import org.openqa.selenium.By;
 
 import java.util.ArrayList;
@@ -23,7 +22,7 @@ public class ShoppingCartPage extends BasePage {
     By removeProductButton = By.xpath("//a[contains(@class,'remove-item')]");
 
     public void removeAllProducts() {
-        int count = BaseElement.count("//a[contains(@class,'remove')]");
+        int count = $$(By.xpath("//a[contains(@class,'remove')]")).size();
         while (count > 0) {
             $(removeProductButton).jsClick();
             count--;
@@ -43,47 +42,25 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifyProductDisplayed(String expectedName, String expectedPrice, String expectedQuantity) {
-        String actualName = getProductName();
-        String actualPrice = getProductPrice();
-        String actualQuantity = getProductQuantityField();
-
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
-        if (!actualQuantity.equals(expectedQuantity)) {
-            throw new AssertionError("Product quantity mismatch. Expected: " + expectedQuantity + ", Actual: " + actualQuantity);
-        }
+        $(productName).shouldHaveText(expectedName);
+        $(productPrice).shouldHaveText(expectedPrice);
+        $(productQuantityField).shouldHaveValue(expectedQuantity);
     }
 
     public void verifyProductName(String expectedName) {
-        String actualName = getProductName();
-        if (!actualName.equals(expectedName)) {
-            throw new AssertionError("Product name mismatch. Expected: " + expectedName + ", Actual: " + actualName);
-        }
+        $(productName).shouldHaveText(expectedName);
     }
 
     public void verifyProductPrice(String expectedPrice) {
-        String actualPrice = getProductPrice();
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Product price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(productPrice).shouldHaveText(expectedPrice);
     }
 
     public void verifyProductQuantity(String expectedQuantity) {
-        String actualQuantity = getProductQuantityField();
-        if (!actualQuantity.equals(expectedQuantity)) {
-            throw new AssertionError("Product quantity mismatch. Expected: " + expectedQuantity + ", Actual: " + actualQuantity);
-        }
+        $(productQuantityField).shouldHaveValue(expectedQuantity);
     }
 
     public void verifyProductInCart() {
-        String name = getProductName();
-        if (name == null || name.isEmpty()) {
-            throw new AssertionError("Product should be displayed in cart");
-        }
+        $(productName).shouldBeVisible();
     }
 
     public void clickQuantityMinusButton() {
@@ -99,21 +76,21 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public List<String> getAllProductNames() {
+        int count = $$(By.xpath("//td[contains(@class,'product-name')]")).size();
         List<String> names = new ArrayList<>();
-        int count = BaseElement.count("//td[contains(@class,'product-name')]");
         for (int i = 1; i <= count; i++) {
             String xpath = String.format("(//td[contains(@class,'product-name')])[%s]", i);
-            names.add(new BaseElement(By.xpath(xpath)).getText());
+            names.add($(By.xpath(xpath)).getText());
         }
         return names;
     }
 
     public List<String> getAllProductPrices() {
+        int count = $$(By.xpath("//td[contains(@class,'product-price')]//span[contains(@class,'amount')]")).size();
         List<String> prices = new ArrayList<>();
-        int count = BaseElement.count("//td[contains(@class,'product-price')]//span[contains(@class,'amount')]");
         for (int i = 1; i <= count; i++) {
             String xpath = String.format("(//td[contains(@class,'product-price')]//span[contains(@class,'amount')])[%s]", i);
-            prices.add(new BaseElement(By.xpath(xpath)).getText());
+            prices.add($(By.xpath(xpath)).getText());
         }
         return prices;
     }
@@ -131,9 +108,7 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifyCartCleared() {
-        if (!isEmptyCartMessageVisible()) {
-            throw new AssertionError("Empty cart message should be displayed after clearing cart");
-        }
+        $(emptyCartMessage).shouldBeVisible();
     }
 
     public String getSubTotalPrice() {
@@ -141,10 +116,7 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifySubTotalPrice(String expectedPrice) {
-        String actualPrice = getSubTotalPrice();
-        if (!actualPrice.equals(expectedPrice)) {
-            throw new AssertionError("Subtotal price mismatch. Expected: " + expectedPrice + ", Actual: " + actualPrice);
-        }
+        $(subTotalPrice).shouldHaveText(expectedPrice);
     }
 
     public void setProductQuantity(String quantity) {
