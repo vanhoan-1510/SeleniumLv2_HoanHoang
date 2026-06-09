@@ -9,13 +9,13 @@ public class TC06 extends BaseTest {
 
     @Test
     public void guestCanPurchaseOrderSuccessfully(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        shopPage.goToShopPage();
+        header.goToShopPage();
 
         shopPage.verifyGridViewVisible();
 
@@ -24,7 +24,7 @@ public class TC06 extends BaseTest {
 
         shopPage.addFirstProductToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
 
         String productName = cartPage.getProductName();
         String productPrice = cartPage.getProductPrice();

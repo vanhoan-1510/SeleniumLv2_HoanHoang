@@ -20,7 +20,7 @@ public class TC03 extends BaseTest {
     }
 
     private void runTestWithPaymentMethod(ITestContext context, PaymentMethod paymentMethod) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
@@ -28,16 +28,19 @@ public class TC03 extends BaseTest {
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
         if (paymentMethod != PaymentMethod.values()[0]) {
-            homePage.goToShopPage();
+            header.goToShopPage();
         } else {
-            homePage.goToLoginPage();
+            header.goToLoginPage();
             loginPage.login(getAssignedAccount().getUsername(), getAssignedAccount().getPassword());
-            homePage.goToShopPage();
         }
+
+        header.goToCartPage();
+        shoppingCartPage.removeAllProducts();
+        header.goToShopPage();
 
         Map<String, String> product = shopPage.addMultipleRandomProductsToCart().get(0);
 
-        homePage.goToCartPage();
+        header.goToCartPage();
         shoppingCartPage.clickCheckoutButton();
 
         checkoutPage.verifyCheckoutHeadingVisible();
@@ -48,11 +51,7 @@ public class TC03 extends BaseTest {
         checkoutPage.clickPlaceOrder();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
-
-        String statusMessage = orderSuccessPage.getStatusMessage();
-        if (!statusMessage.contains("Thank you") && !statusMessage.contains("received")) {
-            throw new AssertionError("Order confirmation message should show correctly for " + paymentMethod.getDisplayName());
-        }
+        orderSuccessPage.verifyOrderConfirmationMessage();
 
         orderSuccessPage.verifyOrderedProductName(product.get("name"));
 
@@ -61,6 +60,6 @@ public class TC03 extends BaseTest {
             throw new AssertionError("Payment method should be displayed");
         }
 
-        homePage.goToShopPage();
+        header.goToShopPage();
     }
 }

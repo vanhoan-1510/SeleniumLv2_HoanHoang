@@ -3,6 +3,7 @@ package com.hoanhoang.core.element;
 import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.config.EnvironmentConfig;
 import com.hoanhoang.core.driver.DriverManager;
+import com.hoanhoang.core.util.RetryHandler;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -13,6 +14,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 
 import java.time.Duration;
+import java.util.Locale;
 
 public class BaseElement implements Element {
 
@@ -74,6 +76,19 @@ public class BaseElement implements Element {
         return getActionWait().until(ExpectedConditions.elementToBeClickable(locator));
     }
 
+    private String getTextFrom(WebElement el) {
+        String text = el.getText();
+        if (text != null && !text.trim().isEmpty()) {
+            return text.trim();
+        }
+
+        Object jsText = ((JavascriptExecutor) driver()).executeScript(
+                "return (arguments[0].innerText || arguments[0].textContent || '').trim();",
+                el
+        );
+        return jsText == null ? "" : jsText.toString();
+    }
+
     public static int count(String xpath) {
         return driver().findElements(By.xpath(xpath)).size();
     }
@@ -107,7 +122,7 @@ public class BaseElement implements Element {
     @Override
     public void shouldHaveText(String expected) {
         retryAssert(() -> {
-            String actual = getVisibleElement().getText();
+            String actual = getTextFrom(getVisibleElement());
             Assert.assertEquals(actual, expected,
                     "Text mismatch. Expected: '" + expected + "', Actual: '" + actual + "'");
         });
@@ -116,9 +131,20 @@ public class BaseElement implements Element {
     @Override
     public void shouldContainText(String expected) {
         retryAssert(() -> {
-            String actual = getVisibleElement().getText();
+            String actual = getTextFrom(getVisibleElement());
             Assert.assertTrue(actual.contains(expected),
                     "Text should contain: '" + expected + "', Actual: '" + actual + "'");
+        });
+    }
+
+    @Override
+    public void shouldContainTextIgnoringCase(String expected) {
+        retryAssert(() -> {
+            String actual = getTextFrom(getVisibleElement());
+            Assert.assertTrue(
+                    actual.toLowerCase(Locale.ROOT).contains(expected.toLowerCase(Locale.ROOT)),
+                    "Text should contain ignoring case: '" + expected + "', Actual: '" + actual + "'"
+            );
         });
     }
 
@@ -142,7 +168,7 @@ public class BaseElement implements Element {
 
     @Override
     public String getText() {
-        return getVisibleElement().getText();
+        return getTextFrom(getVisibleElement());
     }
 
     @Override
@@ -173,55 +199,17 @@ public class BaseElement implements Element {
 
     @Override
     public void shouldBeVisible() {
-        boolean visible = isVisible();
-        Assert.assertTrue(visible, "Element is NOT visible: " + locator.toString());
+        retryAssert(() -> {
+            boolean visible = isVisible();
+            Assert.assertTrue(visible, "Element is NOT visible: " + locator.toString());
+        });
     }
 
     private void retryAssert(Runnable assertion) {
-        AssertionError lastError = null;
-        int maxAttempts = getMaxRetryAttempts();
-        int intervalMs = getRetryIntervalMs();
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                assertion.run();
-                return;
-            } catch (AssertionError e) {
-                lastError = e;
-                if (attempt < maxAttempts) {
-                    try {
-                        Thread.sleep(intervalMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Thread interrupted during retry", ie);
-                    }
-                }
-            }
-        }
-        throw lastError;
+        RetryHandler.retry(assertion, getMaxRetryAttempts(), getRetryIntervalMs());
     }
 
     private void retryAction(Runnable action) {
-        RuntimeException lastError = null;
-        int maxAttempts = getMaxRetryAttempts();
-        int intervalMs = getRetryIntervalMs();
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                action.run();
-                return;
-            } catch (Exception e) {
-                lastError = (e instanceof RuntimeException) ? (RuntimeException) e : new RuntimeException(e);
-                if (attempt < maxAttempts) {
-                    try {
-                        Thread.sleep(intervalMs);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("Thread interrupted during retry", ie);
-                    }
-                }
-            }
-        }
-        throw lastError;
+        RetryHandler.retry(action, getMaxRetryAttempts(), getRetryIntervalMs());
     }
 }

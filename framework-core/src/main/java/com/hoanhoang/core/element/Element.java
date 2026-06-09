@@ -5,6 +5,7 @@ public interface Element {
     void type(String text);
     void shouldHaveText(String expected);
     void shouldContainText(String expected);
+    void shouldContainTextIgnoringCase(String expected);
     void shouldHaveValue(String expected);
     void shouldHave(String prop, String expected);
 

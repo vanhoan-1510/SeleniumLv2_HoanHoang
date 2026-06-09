@@ -2,19 +2,16 @@ package com.hoanhoang.pages;
 
 import org.openqa.selenium.By;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ShoppingCartPage extends BasePage {
 
-    By productName = By.cssSelector(".product-title");
+    By productName = By.cssSelector("a.product-title");
     By productPrice = By.cssSelector("td.product-price span.woocommerce-Price-amount");
     By productQuantityField = By.xpath("//input[contains(@class,'qty') and @type='number']");
     By quantityMinusButton = By.cssSelector(".minus");
     By quantityPlusButton = By.cssSelector(".plus");
-    By checkoutButton = By.xpath("//a[contains(normalize-space(),'checkout')]");
-    By productNameList = By.cssSelector(".product-name");
-    By productPriceList = By.cssSelector("td.product-price span.woocommerce-Price-amount");
+    By checkoutButton = By.cssSelector("a.checkout-button");
     By clearCartButton = By.xpath("//a[contains(normalize-space(),'remove all items') or contains(normalize-space(),'clear cart')]");
     By emptyCartMessage = By.xpath("//h1[contains(text(),'YOUR SHOPPING CART IS EMPTY') or contains(text(),'Cart is empty')]");
     By updateCartButton = By.cssSelector("[name='update_cart']");
@@ -42,25 +39,27 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifyProductDisplayed(String expectedName, String expectedPrice, String expectedQuantity) {
-        $(productName).shouldHaveText(expectedName);
-        $(productPrice).shouldHaveText(expectedPrice);
-        $(productQuantityField).shouldHaveValue(expectedQuantity);
+        verifyWithRetry(() -> {
+            $(productName).shouldContainText(expectedName);
+            $(productPrice).shouldHaveText(expectedPrice);
+            $(productQuantityField).shouldHaveValue(expectedQuantity);
+        });
     }
 
     public void verifyProductName(String expectedName) {
-        $(productName).shouldHaveText(expectedName);
+        verifyWithRetry(() -> $(productName).shouldContainText(expectedName));
     }
 
     public void verifyProductPrice(String expectedPrice) {
-        $(productPrice).shouldHaveText(expectedPrice);
+        verifyWithRetry(() -> $(productPrice).shouldHaveText(expectedPrice));
     }
 
     public void verifyProductQuantity(String expectedQuantity) {
-        $(productQuantityField).shouldHaveValue(expectedQuantity);
+        verifyWithRetry(() -> $(productQuantityField).shouldHaveValue(expectedQuantity));
     }
 
     public void verifyProductInCart() {
-        $(productName).shouldBeVisible();
+        verifyWithRetry(() -> $(productName).shouldBeVisible());
     }
 
     public void clickQuantityMinusButton() {
@@ -76,23 +75,11 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public List<String> getAllProductNames() {
-        int count = $$(By.xpath("//td[contains(@class,'product-name')]")).size();
-        List<String> names = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            String xpath = String.format("(//td[contains(@class,'product-name')])[%s]", i);
-            names.add($(By.xpath(xpath)).getText());
-        }
-        return names;
+        return $$(productName).getTexts();
     }
 
     public List<String> getAllProductPrices() {
-        int count = $$(By.xpath("//td[contains(@class,'product-price')]//span[contains(@class,'amount')]")).size();
-        List<String> prices = new ArrayList<>();
-        for (int i = 1; i <= count; i++) {
-            String xpath = String.format("(//td[contains(@class,'product-price')]//span[contains(@class,'amount')])[%s]", i);
-            prices.add($(By.xpath(xpath)).getText());
-        }
-        return prices;
+        return $$(productPrice).getTexts();
     }
 
     public void clearCart() {
@@ -104,11 +91,11 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifyEmptyCartMessageVisible() {
-        $(emptyCartMessage).shouldBeVisible();
+        verifyWithRetry(() -> $(emptyCartMessage).shouldBeVisible());
     }
 
     public void verifyCartCleared() {
-        $(emptyCartMessage).shouldBeVisible();
+        verifyWithRetry(() -> $(emptyCartMessage).shouldBeVisible());
     }
 
     public String getSubTotalPrice() {
@@ -116,7 +103,7 @@ public class ShoppingCartPage extends BasePage {
     }
 
     public void verifySubTotalPrice(String expectedPrice) {
-        $(subTotalPrice).shouldHaveText(expectedPrice);
+        verifyWithRetry(() -> $(subTotalPrice).shouldHaveText(expectedPrice));
     }
 
     public void setProductQuantity(String quantity) {

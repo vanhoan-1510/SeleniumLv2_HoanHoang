@@ -1,6 +1,7 @@
 package com.hoanhoang.tests;
 
 import com.hoanhoang.data.TestDataManager;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.ProductDetailPage;
 import com.hoanhoang.pages.ShopPage;
 import org.testng.ITestContext;
@@ -12,8 +13,9 @@ public class TC10 extends BaseTest {
     public void userCanPostReview(ITestContext context) {
         ShopPage shopPage = new ShopPage();
         ProductDetailPage productDetailPage = new ProductDetailPage();
+        HeaderComponent header = new HeaderComponent();
 
-        shopPage.goToShopPage();
+        header.goToShopPage();
         shopPage.clickFirstProduct();
 
         if (!productDetailPage.isReviewsTabVisible()) {

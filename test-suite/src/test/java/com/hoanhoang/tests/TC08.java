@@ -1,6 +1,6 @@
 package com.hoanhoang.tests;
 
-import com.hoanhoang.pages.HomePage;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.ShopPage;
 import com.hoanhoang.pages.ShoppingCartPage;
 import org.testng.ITestContext;
@@ -10,14 +10,14 @@ public class TC08 extends BaseTest {
 
     @Test
     public void userCanClearCart(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
 
-        shopPage.goToShopPage();
+        header.goToShopPage();
         shopPage.addFirstProductToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
 
         cartPage.verifyProductInCart();
 

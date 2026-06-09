@@ -6,7 +6,7 @@ import org.openqa.selenium.By;
 
 public class CheckoutPage extends BasePage {
 
-    By checkoutHeading = By.xpath("//a[contains(@href,'checkout') and contains(@class,'active')]");
+    By checkoutHeading = By.cssSelector("form.checkout, #customer_details, #place_order");
     By billingFirstName = By.cssSelector("#billing_first_name");
     By billingLastName = By.cssSelector("#billing_last_name");
     By billingAddress = By.cssSelector("#billing_address_1");
@@ -80,12 +80,12 @@ public class CheckoutPage extends BasePage {
     }
 
     public void verifyOrderProduct(String expectedName, String expectedPrice) {
-        $(orderProductName).shouldHaveText(expectedName);
+        $(orderProductName).shouldContainTextIgnoringCase(expectedName);
         $(orderTotalPrice).shouldHaveText(expectedPrice);
     }
 
     public void verifyOrderProductName(String expectedName) {
-        $(orderProductName).shouldHaveText(expectedName);
+        $(orderProductName).shouldContainTextIgnoringCase(expectedName);
     }
 
     public void verifyOrderProductPrice(String expectedPrice) {

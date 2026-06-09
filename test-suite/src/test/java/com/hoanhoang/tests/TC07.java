@@ -1,6 +1,6 @@
 package com.hoanhoang.tests;
 
-import com.hoanhoang.pages.HomePage;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.ShopPage;
 import com.hoanhoang.pages.ShoppingCartPage;
 import com.hoanhoang.pages.CheckoutPage;
@@ -11,15 +11,15 @@ public class TC07 extends BaseTest {
 
     @Test
     public void properErrorHandlingWhenMandatoryFieldsBlank(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
 
-        shopPage.goToShopPage();
+        header.goToShopPage();
         shopPage.addFirstProductToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
         cartPage.clickCheckoutButton();
 
         checkoutPage.clickPlaceOrder();

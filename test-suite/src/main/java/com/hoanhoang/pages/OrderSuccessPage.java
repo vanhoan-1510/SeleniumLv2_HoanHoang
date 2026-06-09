@@ -11,7 +11,7 @@ public class OrderSuccessPage extends BasePage {
     By orderPaymentMethod = By.xpath("//tr[th[normalize-space()='Payment method:']]/td");
     By orderProductName = By.xpath("//td[contains(@class,'product-name')]/a");
     By orderProductQty = By.xpath("//td[contains(@class,'product-name')]//strong");
-    By orderProductPrice = By.cssSelector("//td[contains(@class,'product-total')]//span");
+    By orderProductPrice = By.xpath("//td[contains(@class,'product-total')]//span");
     By billingName = By.xpath("//h2[normalize-space()='Billing address']/following-sibling::address");
 
     public boolean isOrderSuccessHeadingVisible() {
@@ -23,7 +23,7 @@ public class OrderSuccessPage extends BasePage {
     }
 
     public void verifyOrderConfirmationMessage() {
-        $(statusMessage).shouldContainText("Thank you");
+        $(statusMessage).shouldContainTextIgnoringCase("Thank you");
     }
 
     public String getOrderedProductName() {

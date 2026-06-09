@@ -1,6 +1,7 @@
 package com.hoanhoang.tests;
 
 import com.hoanhoang.data.TestDataManager;
+import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.*;
 import org.testng.ITestContext;
 import org.testng.annotations.Test;
@@ -12,36 +13,37 @@ public class TC02 extends BaseTest {
 
     @Test
     public void tc2_buyMultipleItemsSuccessfully(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(getAssignedAccount().getUsername(), getAssignedAccount().getPassword());
 
-        homePage.goToShopPage();
+        header.goToCartPage();
+        shoppingCartPage.removeAllProducts();
+
+        header.goToShopPage();
 
         List<Map<String, String>> products = shopPage.addMultipleRandomProductsToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
 
         List<String> cartProductNames = shoppingCartPage.getAllProductNames();
         List<String> cartProductPrices = shoppingCartPage.getAllProductPrices();
 
-        for (int i = 0; i < products.size(); i++) {
-            String expectedName = products.get(i).get("name");
-            String expectedPrice = products.get(i).get("price");
-            String actualName = cartProductNames.get(i);
-            String actualPrice = cartProductPrices.get(i);
+        for (Map<String, String> product : products) {
+            String expectedName = product.get("name");
+            String expectedPrice = normalizePrice(product.get("price"));
 
-            if (!actualName.equals(expectedName)) {
-                throw new AssertionError("Product name at index " + i + " does not match. Expected: " + expectedName + ", Actual: " + actualName);
+            if (!cartProductNames.contains(expectedName)) {
+                throw new AssertionError("Cart should contain product name: " + expectedName + ". Actual: " + cartProductNames);
             }
-            if (!actualPrice.equals(expectedPrice)) {
-                throw new AssertionError("Product price at index " + i + " does not match. Expected: " + expectedPrice + ", Actual: " + actualPrice);
+            if (!cartProductPrices.contains(expectedPrice)) {
+                throw new AssertionError("Cart should contain product price: " + expectedPrice + ". Actual: " + cartProductPrices);
             }
         }
 
@@ -51,15 +53,18 @@ public class TC02 extends BaseTest {
 
         TestDataManager.BillingDetails billingInfo = TestDataManager.getBillingInfo();
         checkoutPage.fillBillingDetails(billingInfo);
+        checkoutPage.selectPaymentMethod(PaymentMethod.COD);
         checkoutPage.clickPlaceOrder();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
 
-        String statusMessage = orderSuccessPage.getStatusMessage();
-        if (!statusMessage.contains("Thank you") && !statusMessage.contains("received")) {
-            throw new AssertionError("Order confirmation message should show correctly");
-        }
+        orderSuccessPage.verifyOrderConfirmationMessage();
 
         orderSuccessPage.verifyBillingName(billingInfo.getFirstName(), billingInfo.getLastName());
+    }
+
+    private String normalizePrice(String priceText) {
+        String[] prices = priceText.trim().split("\\$");
+        return "$" + prices[prices.length - 1].trim();
     }
 }

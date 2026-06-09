@@ -8,7 +8,7 @@ import com.hoanhoang.data.AccountPool;
 import com.hoanhoang.data.TestDataManager;
 import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.CheckoutPage;
-import com.hoanhoang.pages.HomePage;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.LoginPage;
 import com.hoanhoang.pages.OrderSuccessPage;
 import com.hoanhoang.pages.ShopPage;
@@ -55,6 +55,9 @@ public class BaseTest {
     }
 
     protected TestDataManager.UserCredentials getAssignedAccount() {
+        if (currentAccount != null) {
+            return currentAccount;
+        }
         return AccountPool.getAvailableAccount();
     }
 
@@ -69,44 +72,44 @@ public class BaseTest {
         if (currentAccount == null) {
             currentAccount = getAssignedAccount();
         }
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(currentAccount.getUsername(), currentAccount.getPassword());
     }
 
     protected void login(ITestContext context) {
         TestDataManager.UserCredentials account = getAssignedAccount(context);
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(account.getUsername(), account.getPassword());
     }
 
     protected void login(TestDataManager.UserCredentials account) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(account.getUsername(), account.getPassword());
     }
 
     protected void createOrder() {
         TestDataManager.UserCredentials user = TestDataManager.getValidCredentials();
 
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(user.getUsername(), user.getPassword());
 
-        homePage.goToShopPage();
+        header.goToShopPage();
         shopPage.addMultipleRandomProductsToCart().get(0);
 
-        homePage.goToCartPage();
+        header.goToCartPage();
         shoppingCartPage.clickCheckoutButton();
 
         TestDataManager.BillingDetails billingInfo = TestDataManager.getBillingInfo();

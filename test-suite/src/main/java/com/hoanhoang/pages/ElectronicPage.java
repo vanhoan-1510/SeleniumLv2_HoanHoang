@@ -10,7 +10,7 @@ public class ElectronicPage extends BasePage {
 
     public String productNameXpath = "(//div[contains(@class,'content-product')])[%s]//h2[contains(@class,'product-title')]";
     public String productPriceXpath = "(//div[contains(@class,'content-product')])[%s]//span[contains(@class,'price')]";
-    public String addToCardButtonXpath = "(//a[contains(.,'Add to cart')])[%s]";
+    public String addToCardButtonXpath = "(//div[contains(@class,'content-product')])[%s]//a[contains(.,'Add to cart')]";
 
     public Map<String, String> addRandomProductToCart() {
         int total = $$(By.xpath("//div[contains(@class,'content-product')]")).size();

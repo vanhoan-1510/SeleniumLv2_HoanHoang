@@ -1,6 +1,6 @@
 package com.hoanhoang.tests;
 
-import com.hoanhoang.pages.HomePage;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.LoginPage;
 import com.hoanhoang.pages.ShopPage;
 import org.testng.ITestContext;
@@ -10,14 +10,14 @@ public class TC04 extends BaseTest {
 
     @Test
     public void tc4_sortItemsByPrice(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
         ShopPage shopPage = new ShopPage();
 
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(getAssignedAccount().getUsername(), getAssignedAccount().getPassword());
 
-        homePage.goToShopPage();
+        header.goToShopPage();
 
         shopPage.sortByPriceLowToHigh();
         shopPage.verifyPricesSortedLowToHigh();
