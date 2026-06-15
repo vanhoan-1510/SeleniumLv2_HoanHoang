@@ -18,6 +18,9 @@ allure-report/
 # Logs
 *.log
 
+# Local browser drivers
+drivers/
+
 # OS
 .DS_Store
 Thumbs.db

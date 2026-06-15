@@ -14,11 +14,21 @@ public class TC09 extends BaseTest {
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
 
+        login();
+
+        header.goToCartPage();
+        cartPage.removeAllProducts();
+
         header.goToShopPage();
         shopPage.addFirstProductToCart();
 
         header.goToCartPage();
 
+        if (!"1".equals(cartPage.getProductQuantityField())) {
+            cartPage.setProductQuantity("1");
+            cartPage.clickUpdateCartButton();
+        }
+        cartPage.verifyProductQuantity("1");
         String initialQty = cartPage.getProductQuantityField();
         String initialSubTotal = cartPage.getSubTotalPrice();
 

@@ -14,6 +14,11 @@ public class TC08 extends BaseTest {
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
 
+        login();
+
+        header.goToCartPage();
+        cartPage.removeAllProducts();
+
         header.goToShopPage();
         shopPage.addFirstProductToCart();
 
@@ -21,7 +26,7 @@ public class TC08 extends BaseTest {
 
         cartPage.verifyProductInCart();
 
-        cartPage.clearCart();
+        cartPage.clearCartUsingClearCartButton();
 
         cartPage.verifyCartCleared();
     }

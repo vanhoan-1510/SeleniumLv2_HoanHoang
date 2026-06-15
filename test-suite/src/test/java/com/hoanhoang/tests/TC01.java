@@ -47,7 +47,7 @@ public class TC01 extends BaseTest {
 
         checkoutPage.fillBillingDetails(billingInfo);
         checkoutPage.selectPaymentMethod(PaymentMethod.COD);
-        checkoutPage.clickPlaceOrder();
+        checkoutPage.clickPlaceOrderExpectingSuccess();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
         orderSuccessPage.verifyOrderConfirmationMessage();

@@ -2,13 +2,11 @@ package com.hoanhoang.data;
 
 import com.hoanhoang.data.TestDataManager.UserCredentials;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AccountPool {
 
     private static final List<UserCredentials> accounts;
     private static final Set<Integer> inUseAccounts = Collections.synchronizedSet(new HashSet<>());
-    private static final AtomicBoolean initialized = new AtomicBoolean(false);
     private static final int DEFAULT_WAIT_TIMEOUT_SECONDS = 60;
 
     static {
@@ -17,10 +15,12 @@ public class AccountPool {
             try {
                 loadedAccounts.add(TestDataManager.loadCredentials("validUser" + i));
             } catch (Exception e) {
+                if (i == 1) {
+                    throw new IllegalStateException("No valid test accounts were loaded. Missing validUser1.", e);
+                }
             }
         }
         accounts = Collections.unmodifiableList(loadedAccounts);
-        initialized.set(true);
     }
 
     public static UserCredentials getAvailableAccount() {

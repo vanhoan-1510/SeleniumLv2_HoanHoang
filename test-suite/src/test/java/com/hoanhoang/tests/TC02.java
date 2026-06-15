@@ -14,14 +14,12 @@ public class TC02 extends BaseTest {
     @Test
     public void tc2_buyMultipleItemsSuccessfully(ITestContext context) {
         HeaderComponent header = new HeaderComponent();
-        LoginPage loginPage = new LoginPage();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        header.goToLoginPage();
-        loginPage.login(getAssignedAccount().getUsername(), getAssignedAccount().getPassword());
+        login();
 
         header.goToCartPage();
         shoppingCartPage.removeAllProducts();
@@ -54,12 +52,13 @@ public class TC02 extends BaseTest {
         TestDataManager.BillingDetails billingInfo = TestDataManager.getBillingInfo();
         checkoutPage.fillBillingDetails(billingInfo);
         checkoutPage.selectPaymentMethod(PaymentMethod.COD);
-        checkoutPage.clickPlaceOrder();
+        checkoutPage.clickPlaceOrderExpectingSuccess();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
 
         orderSuccessPage.verifyOrderConfirmationMessage();
 
+        orderSuccessPage.verifyOrderedProducts(products);
         orderSuccessPage.verifyBillingName(billingInfo.getFirstName(), billingInfo.getLastName());
     }
 

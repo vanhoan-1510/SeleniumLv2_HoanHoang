@@ -61,7 +61,7 @@ public class BaseElements implements Elements {
         if (index < 0 || index >= elements.size()) {
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + elements.size());
         }
-        return ElementFactory.$(By.xpath("(" + locator.toString().replace("By.xpath:", "") + ")[" + (index + 1) + "]"));
+        return ElementFactory.$(elements.get(index));
     }
 
     @Override

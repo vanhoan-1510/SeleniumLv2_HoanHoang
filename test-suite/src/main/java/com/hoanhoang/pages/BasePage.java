@@ -1,5 +1,6 @@
 package com.hoanhoang.pages;
 
+import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.DriverManager;
 import com.hoanhoang.core.element.Element;
 import com.hoanhoang.core.element.ElementFactory;
@@ -9,9 +10,6 @@ import com.hoanhoang.core.util.RetryHandler;
 import org.openqa.selenium.By;
 
 public class BasePage {
-
-    private static final int MAX_RETRY_ATTEMPTS = 3;
-    private static final int RETRY_INTERVAL_MS = 1000;
 
     protected Element $(By locator) {
         return ElementFactory.$(locator);
@@ -26,7 +24,12 @@ public class BasePage {
     }
 
     protected void verifyWithRetry(Runnable verification) {
-        RetryHandler.retry(verification, MAX_RETRY_ATTEMPTS, RETRY_INTERVAL_MS, this::retryPageLoad);
+        RetryHandler.retryUntilTimeout(
+                verification,
+                ConfigLoader.getConfig().getPageVerificationRetryTimeoutMs(),
+                ConfigLoader.getConfig().getStepRetryIntervalMs(),
+                this::retryPageLoad
+        );
     }
 
     protected void retryPageLoad() {

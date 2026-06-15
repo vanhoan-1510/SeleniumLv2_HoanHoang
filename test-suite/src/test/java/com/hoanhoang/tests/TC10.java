@@ -15,6 +15,8 @@ public class TC10 extends BaseTest {
         ProductDetailPage productDetailPage = new ProductDetailPage();
         HeaderComponent header = new HeaderComponent();
 
+        login();
+
         header.goToShopPage();
         shopPage.clickFirstProduct();
 
@@ -32,17 +34,14 @@ public class TC10 extends BaseTest {
 
         productDetailPage.enterReviewName(reviewData.getName());
         productDetailPage.enterReviewEmail(reviewData.getEmail());
-        productDetailPage.selectRandomStarRating();
+        int selectedRating = productDetailPage.selectRandomStarRating();
+        if (!productDetailPage.isSelectedRatingActive(selectedRating)) {
+            throw new AssertionError("Selected rating should be active: " + selectedRating);
+        }
         productDetailPage.enterReviewComment(testComment);
         productDetailPage.submitReview();
+        productDetailPage.clickReviewsTab();
 
-        if (!productDetailPage.isLatestReviewDisplayed(testComment)) {
-            throw new AssertionError("Review should be displayed after submission");
-        }
-
-        int finalReviewCount = productDetailPage.getReviewCount();
-        if (finalReviewCount <= initialReviewCount) {
-            throw new AssertionError("Number of reviews should be updated");
-        }
+        productDetailPage.verifyReviewSubmitted(testComment, initialReviewCount);
     }
 }

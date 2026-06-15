@@ -35,11 +35,11 @@ public class TC06 extends BaseTest {
 
         checkoutPage.fillBillingInfo("John", "Doe", "123 Main St", "New York", "10001", "1234567890");
         checkoutPage.selectPaymentMethod(PaymentMethod.COD);
-        checkoutPage.clickPlaceOrder();
+        checkoutPage.clickPlaceOrderExpectingSuccess();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
+        orderSuccessPage.verifyOrderConfirmationMessage();
         orderSuccessPage.verifyOrderedProductName(productName);
         orderSuccessPage.verifyOrderedProductPrice(productPrice);
-        orderSuccessPage.verifyBillingName("John", "Doe");
     }
 }

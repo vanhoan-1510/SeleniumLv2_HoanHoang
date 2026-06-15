@@ -18,14 +18,15 @@ import java.util.Locale;
 
 public class BaseElement implements Element {
 
-    private static final int DEFAULT_MAX_RETRY_ATTEMPTS = 2;
-    private static final int DEFAULT_RETRY_INTERVAL_MS = 500;
-
     protected By locator;
     protected WebElement element;
 
     public BaseElement(By locator) {
         this.locator = locator;
+    }
+
+    public BaseElement(WebElement element) {
+        this.element = element;
     }
 
     private static WebDriver driver() {
@@ -34,14 +35,6 @@ public class BaseElement implements Element {
 
     private static EnvironmentConfig config() {
         return ConfigLoader.getConfig();
-    }
-
-    private static int getMaxRetryAttempts() {
-        return config().getMaxRetryAttempts() > 0 ? config().getMaxRetryAttempts() : DEFAULT_MAX_RETRY_ATTEMPTS;
-    }
-
-    private static int getRetryIntervalMs() {
-        return config().getRetryIntervalMs() > 0 ? config().getRetryIntervalMs() : DEFAULT_RETRY_INTERVAL_MS;
     }
 
     private WebDriverWait getWait(int timeoutSeconds) {
@@ -65,14 +58,29 @@ public class BaseElement implements Element {
     }
 
     protected WebElement getElement() {
+        if (element != null) {
+            return element;
+        }
         return getElementWait().until(ExpectedConditions.presenceOfElementLocated(locator));
     }
 
     protected WebElement getVisibleElement() {
+        if (element != null) {
+            if (!element.isDisplayed()) {
+                throw new AssertionError("Element is not visible");
+            }
+            return element;
+        }
         return getElementWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
     protected WebElement getClickableElement() {
+        if (element != null) {
+            if (!element.isDisplayed() || !element.isEnabled()) {
+                throw new AssertionError("Element is not clickable");
+            }
+            return element;
+        }
         return getActionWait().until(ExpectedConditions.elementToBeClickable(locator));
     }
 
@@ -189,6 +197,13 @@ public class BaseElement implements Element {
 
     @Override
     public boolean isVisible() {
+        if (element != null) {
+            try {
+                return element.isDisplayed();
+            } catch (Exception e) {
+                return false;
+            }
+        }
         try {
             getAssertionWait().until(ExpectedConditions.visibilityOfElementLocated(locator));
             return true;
@@ -206,10 +221,10 @@ public class BaseElement implements Element {
     }
 
     private void retryAssert(Runnable assertion) {
-        RetryHandler.retry(assertion, getMaxRetryAttempts(), getRetryIntervalMs());
+        RetryHandler.retryUntilTimeout(assertion, config().getStepRetryTimeoutMs(), config().getStepRetryIntervalMs());
     }
 
     private void retryAction(Runnable action) {
-        RetryHandler.retry(action, getMaxRetryAttempts(), getRetryIntervalMs());
+        RetryHandler.retryUntilTimeout(action, config().getStepRetryTimeoutMs(), config().getStepRetryIntervalMs());
     }
 }

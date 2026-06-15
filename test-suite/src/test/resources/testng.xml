@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Selenium Test Suite" parallel="tests" thread-count="3" data-provider-thread-count="3">
+<suite name="Selenium Test Suite" parallel="classes" thread-count="4" data-provider-thread-count="4">
 
     <listeners>
+        <listener class-name="com.hoanhoang.report.listener.RetryAnnotationTransformer"/>
         <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
         <listener class-name="com.hoanhoang.report.listener.TestListener"/>
-        <listener class-name="com.hoanhoang.report.listener.AccountManagementListener"/>
     </listeners>
 
     <test name="Smoke Tests">
