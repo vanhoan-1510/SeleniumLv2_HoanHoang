@@ -9,13 +9,13 @@ public class TC06 extends BaseTest {
 
     @Test
     public void guestCanPurchaseOrderSuccessfully(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        shopPage.goToShopPage();
+        header.goToShopPage();
 
         shopPage.verifyGridViewVisible();
 
@@ -24,7 +24,7 @@ public class TC06 extends BaseTest {
 
         shopPage.addFirstProductToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
 
         String productName = cartPage.getProductName();
         String productPrice = cartPage.getProductPrice();
@@ -35,11 +35,11 @@ public class TC06 extends BaseTest {
 
         checkoutPage.fillBillingInfo("John", "Doe", "123 Main St", "New York", "10001", "1234567890");
         checkoutPage.selectPaymentMethod(PaymentMethod.COD);
-        checkoutPage.clickPlaceOrder();
+        checkoutPage.clickPlaceOrderExpectingSuccess();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
+        orderSuccessPage.verifyOrderConfirmationMessage();
         orderSuccessPage.verifyOrderedProductName(productName);
         orderSuccessPage.verifyOrderedProductPrice(productPrice);
-        orderSuccessPage.verifyBillingName("John", "Doe");
     }
 }

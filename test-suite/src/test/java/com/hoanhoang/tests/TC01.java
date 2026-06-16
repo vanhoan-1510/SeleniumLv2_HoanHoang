@@ -13,25 +13,25 @@ public class TC01 extends BaseTest {
     public void tc1_addRandomProductToCart() {
         TestDataManager.UserCredentials user = getAssignedAccount();
 
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         LoginPage loginPage = new LoginPage();
         ElectronicPage electronicPage = new ElectronicPage();
         ShoppingCartPage shoppingCartPage = new ShoppingCartPage();
         CheckoutPage checkoutPage = new CheckoutPage();
         OrderSuccessPage orderSuccessPage = new OrderSuccessPage();
 
-        homePage.goToLoginPage();
+        header.goToLoginPage();
         loginPage.login(user.getUsername(), user.getPassword());
 
-        homePage.goToCartPage();
+        header.goToCartPage();
         shoppingCartPage.removeAllProducts();
 
-        homePage.goToShopPage();
-        electronicPage.goToCategoryElectronicPage();
+        header.goToShopPage();
+        header.goToCategoryElectronicPage();
 
         Map<String, String> product = electronicPage.addRandomProductToCart();
 
-        electronicPage.goToCartPage();
+        header.goToCartPage();
 
         shoppingCartPage.verifyProductName(product.get("name"));
         shoppingCartPage.verifyProductPrice(product.get("price"));
@@ -47,7 +47,7 @@ public class TC01 extends BaseTest {
 
         checkoutPage.fillBillingDetails(billingInfo);
         checkoutPage.selectPaymentMethod(PaymentMethod.COD);
-        checkoutPage.clickPlaceOrder();
+        checkoutPage.clickPlaceOrderExpectingSuccess();
 
         orderSuccessPage.verifyOrderSuccessHeadingVisible();
         orderSuccessPage.verifyOrderConfirmationMessage();

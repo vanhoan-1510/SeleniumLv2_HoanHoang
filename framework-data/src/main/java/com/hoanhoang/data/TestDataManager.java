@@ -164,7 +164,7 @@ public class TestDataManager {
     }
 
     public static BillingDetails getBillingInfo() {
-        return loadBillingInfo("validBilling");
+        return loadBillingInfo("billingDetails");
     }
 
     public static class ReviewData {

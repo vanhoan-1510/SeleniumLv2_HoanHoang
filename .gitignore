@@ -3,8 +3,11 @@
 *.iml
 out/
 
+.vscode/
+
 # Maven
 target/
+**/target/
 *.class
 
 # Allure
@@ -14,6 +17,9 @@ allure-report/
 
 # Logs
 *.log
+
+# Local browser drivers
+drivers/
 
 # OS
 .DS_Store

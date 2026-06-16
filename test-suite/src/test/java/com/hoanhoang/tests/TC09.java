@@ -1,6 +1,6 @@
 package com.hoanhoang.tests;
 
-import com.hoanhoang.pages.HomePage;
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.ShopPage;
 import com.hoanhoang.pages.ShoppingCartPage;
 import org.testng.ITestContext;
@@ -10,15 +10,25 @@ public class TC09 extends BaseTest {
 
     @Test
     public void userCanUpdateQuantityInCart(ITestContext context) {
-        HomePage homePage = new HomePage();
+        HeaderComponent header = new HeaderComponent();
         ShopPage shopPage = new ShopPage();
         ShoppingCartPage cartPage = new ShoppingCartPage();
 
-        shopPage.goToShopPage();
+        login();
+
+        header.goToCartPage();
+        cartPage.removeAllProducts();
+
+        header.goToShopPage();
         shopPage.addFirstProductToCart();
 
-        homePage.goToCartPage();
+        header.goToCartPage();
 
+        if (!"1".equals(cartPage.getProductQuantityField())) {
+            cartPage.setProductQuantity("1");
+            cartPage.clickUpdateCartButton();
+        }
+        cartPage.verifyProductQuantity("1");
         String initialQty = cartPage.getProductQuantityField();
         String initialSubTotal = cartPage.getSubTotalPrice();
 

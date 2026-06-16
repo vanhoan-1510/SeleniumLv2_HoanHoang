@@ -1,293 +1,170 @@
-# Selenium Automation Framework - TestArchitect Demo
+# SeleniumLv2_HoanHoang
 
-[![Java](https://img.shields.io/badge/Java-11-orange?logo=java&logoColor=white)](https://www.oracle.com/java/)
-[![Maven](https://img.shields.io/badge/Maven-3.8+-red?logo=apache-maven&logoColor=white)](https://maven.apache.org/)
-[![Selenium](https://img.shields.io/badge/Selenium-4.18.1-green?logo=selenium&logoColor=white)](https://www.selenium.dev/)
-[![TestNG](https://img.shields.io/badge/TestNG-7.9.0-blue?logo=testng&logoColor=white)](https://testng.org/)
-[![Allure](https://img.shields.io/badge/Allure-2.25.0-purple?logo=allure&logoColor=white)](https://docs.qameta.io/allure/)
-[![Log4j](https://img.shields.io/badge/Log4j-2.25.3-blue?logo=apache-log4j&logoColor=white)](https://logging.apache.org/log4j/2.x/)
+Java Selenium TestNG automation framework for the TestArchitect demo site.
 
-A robust Java-based test automation framework using Selenium 4, TestNG, and Allure Report for testing the TestArchitect demo website.
+## Stack
 
-## 🚀 Features
+- Java 11
+- Selenium 4
+- TestNG
+- Maven multi-module
+- Allure report
+- Log4j
+- Gson test data
 
-- **Multi-browser support**: Chrome, Firefox, Edge
-- **Page Object Model**: Clean and maintainable test architecture
-- **Data-driven testing**: JSON data models and TestDataManager
-- **Allure Reports**: Beautiful HTML test reports with screenshots
-- **Environment configuration**: Easy switching between dev, staging, prod
-- **Headless mode**: Run tests without GUI for CI/CD
-- **Parallel execution**: TestNG support for parallel testing
-- **Account Pool**: Manage multiple test accounts for concurrent execution
-- **Multiple Payment Methods**: Support for Bank Transfer, Cheque, and COD
+## Modules
 
-## 📋 Test Cases
-
-| TC | Description | Precondition |
-|----|-------------|--------------|
-| TC01 | Buy an item successfully | User logged in |
-| TC02 | Buy multiple items successfully | User logged in |
-| TC03 | Buy with different payment methods (Bank Transfer, Cheque, COD) | User logged in |
-| TC04 | Sort items by price (low to high, high to low) | User logged in |
-| TC05 | Verify orders appear in order history | User placed 2 orders |
-| TC06 | Buy item as guest (grid/list view) | User NOT logged in |
-| TC07 | Error handling when mandatory fields are blank | User at checkout |
-| TC08 | Clear the shopping cart | Items in cart |
-| TC09 | Update product quantity in cart | Item in cart |
-| TC10 | Post a review for a product | User logged in |
-
-## 📦 Project Structure
-
-```
-SeleniumLv2_HoanHoang/
-├── framework-core/              # Core framework components
-│   ├── config/                  # Configuration management
-│   ├── driver/                  # WebDriver management
-│   └── element/                 # Element wrappers
-│
-├── framework-data/              # Data management
-│   ├── model/                   # Data models
-│   ├── builder/                 # Builder pattern
-│   ├── constant/                # Constants (PaymentMethod)
-│   ├── util/                    # Utilities
-│   ├── AccountPool.java         # Account pool management
-│   └── TestDataManager.java     # Load test data from JSON
-│
-├── framework-report/            # Reporting
-│   ├── allure/                  # Allure integration
-│   ├── listener/                # TestNG listeners
-│   └── logger/                  # Logging
-│
-└── test-suite/                  # Test implementations
-    ├── src/main/java/pages/     # Page Object Model
-    │   ├── BasePage.java
-    │   ├── HomePage.java
-    │   ├── LoginPage.java
-    │   ├── ShopPage.java
-    │   ├── ProductDetailPage.java
-    │   ├── ShoppingCartPage.java
-    │   ├── CheckoutPage.java
-    │   ├── OrderSuccessPage.java
-    │   ├── MyAccountPage.java
-    │   └── OrderHistoryPage.java
-    ├── src/test/java/tests/     # Test classes
-    │   ├── BaseTest.java
-    │   ├── TC01.java to TC10.java
-    └── src/test/resources/
-        ├── data/                # Test data JSON files
-        └── testng.xml           # Test suite config
+```text
+framework-core    Driver, config, element wrappers, retry utilities
+framework-data    Test data, account pool, DTO/builder/data constants
+framework-report  Allure, logging, TestNG listeners, retry analyzer
+test-suite        Page objects, business flows, TestNG tests
 ```
 
-## 🏗 Setup
+## Main Features
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/vanhoan-1510/SeleniumLv2_HoanHoang
-cd SeleniumLv2_HoanHoang
+- Local browsers: Chrome, Firefox, Edge
+- Remote execution through Selenium Grid
+- Headless mode with fixed viewport support
+- TestNG parallel execution
+- Step-level retry by timeout
+- Failed-test retry by timeout
+- Element wrapper style: `$(locator).click()`, `$(locator).type()`, `$(locator).shouldHaveText()`
+- Allure report with screenshot on failure
+- Account pool for parallel execution
+- JSON environment config and test data
+
+## Requirements
+
+- Java 11+
+- Maven 3.8+
+- Chrome, Firefox, and/or Edge installed
+- Optional: Allure CLI
+- Optional: Selenium Grid when running `remote=true`
+
+## Test Data
+
+Credentials and billing data:
+
+```text
+test-suite/src/test/resources/data/test-credentials.json
 ```
 
-### 2. Configure test data
+Review data:
 
-Edit `test-suite/src/test/resources/data/test-credentials.json`:
-```json
-{
-  "validUser1": {
-    "username": "user1@testarchitect.com",
-    "password": "password123"
-  },
-  "billingDetails": {
-    "firstName": "Test",
-    "lastName": "User",
-    "email": "test.user@example.com",
-    "phone": "0123456789",
-    "address": "123 Test Street",
-    "city": "Test City",
-    "state": "TS",
-    "postcode": "10000",
-    "country": "Test Country"
-  }
-}
+```text
+test-suite/src/test/resources/data/test-review.json
 ```
 
-Edit `test-suite/src/test/resources/data/test-review.json`:
-```json
-{
-  "reviewData": {
-    "name": "Test Reviewer",
-    "email": "reviewer@example.com"
-  }
-}
+The default suite is configured for 4 parallel threads. Add enough valid accounts or reduce `thread-count` in:
+
+```text
+test-suite/src/test/resources/testng.xml
 ```
 
-### 3. Build the project
-```bash
-mvn clean install
+## Run Tests
+
+Run full suite with default config:
+
+```powershell
+mvn -pl test-suite -am test
 ```
 
-### 4. Install Allure CLI (optional, for viewing reports)
+Run a single test class:
 
-**Windows:**
-```bash
-scoop install allure
+```powershell
+mvn -pl test-suite -am "-Dtest=TC01" "-Dsurefire.failIfNoSpecifiedTests=false" test
 ```
 
-**Mac:**
-```bash
-brew install allure
+Run multiple classes:
+
+```powershell
+mvn -pl test-suite -am "-Dtest=TC01,TC02,TC03" "-Dsurefire.failIfNoSpecifiedTests=false" test
 ```
 
-**Linux:**
-```bash
-sudo apt-get install allure
+## Headless Local Runs
+
+Chrome:
+
+```powershell
+mvn -pl test-suite -am "-Dbrowser=chrome" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" test
 ```
 
-## 🎯 How to Run Tests
+Firefox:
 
-### Run all tests
-```bash
-mvn clean test
+```powershell
+mvn -pl test-suite -am "-Dbrowser=firefox" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" test
 ```
 
-### Run specific test case
-```bash
-mvn test -Dtest=TC01
-mvn test -Dtest=TC02
-mvn test -Dtest=TC03
-mvn test -Dtest=TC04
-mvn test -Dtest=TC05
-mvn test -Dtest=TC06
-mvn test -Dtest=TC07
-mvn test -Dtest=TC08
-mvn test -Dtest=TC09
-mvn test -Dtest=TC10
+Edge with local driver:
+
+```powershell
+mvn -pl test-suite -am "-Dbrowser=edge" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" "-Dwebdriver.edge.driver=E:\Learn\Selenium2\SeleniumLv2_HoanHoang\drivers\edge\msedgedriver.exe" test
 ```
 
-### Run multiple test cases
-```bash
-mvn test -Dtest=TC01,TC02,TC03
+Run all 3 browsers sequentially in PowerShell:
+
+```powershell
+mvn -pl test-suite -am "-Dbrowser=chrome" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" test; mvn -pl test-suite -am "-Dbrowser=firefox" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" test; mvn -pl test-suite -am "-Dbrowser=edge" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" "-Dwebdriver.edge.driver=E:\Learn\Selenium2\SeleniumLv2_HoanHoang\drivers\edge\msedgedriver.exe" test
 ```
 
-### Run tests from IDE
-- Open `test-suite/src/test/resources/testng.xml`
-- Right-click → Run 'testng.xml'
+## Selenium Grid
 
-## 📊 How to View Reports
+Start Selenium Grid separately, then run:
 
-### Generate and open Allure report
-```bash
-mvn allure:report
-allure open target/allure-report
+```powershell
+mvn -pl test-suite -am "-Dremote=true" "-DgridUrl=http://localhost:4444/wd/hub" "-Dbrowser=chrome" "-Dheadless=true" "-DwindowWidth=1920" "-DwindowHeight=1080" test
 ```
 
-### View history of reports
-```bash
-allure serve target/allure-results
+`remote` and `gridUrl` can also be configured in:
+
+```text
+test-suite/src/test/resources/config/dev.json
 ```
 
-## ⚙️ Configuration
+## Allure Report
 
-### Browser Options
-```bash
-mvn test -Dbrowser=chrome
-mvn test -Dbrowser=firefox
-mvn test -Dbrowser=edge
+Generate report:
+
+```powershell
+mvn -pl test-suite allure:report
 ```
 
-### Headless Mode
-```bash
-mvn test -Dheadless=true
+Open generated report:
+
+```powershell
+allure open test-suite/target/site/allure-maven-plugin
 ```
 
-## ✍️ Writing New Tests
+Serve raw results:
 
-### 1. Create a Page Object
-```java
-package com.hoanhoang.pages;
-
-import org.openqa.selenium.By;
-
-public class NewPage extends BasePage {
-    
-    By usernameField = By.id("username");
-    By submitButton = By.cssSelector("button[type='submit']");
-    
-    public void submitForm(String username) {
-        $(usernameField).type(username);
-        $(submitButton).click();
-    }
-}
+```powershell
+allure serve test-suite/target/allure-results
 ```
 
-### 2. Create a Test Class
-```java
-package com.hoanhoang.tests;
+## Test Cases
 
-import com.hoanhoang.pages.NewPage;
-import org.testng.ITestContext;
-import org.testng.annotations.Test;
+| TC | Description |
+| --- | --- |
+| TC01 | Add and buy a product successfully |
+| TC02 | Buy multiple products successfully |
+| TC03 | Buy with Bank Transfer, Cheque, and COD |
+| TC04 | Sort items by price |
+| TC05 | Verify order history |
+| TC06 | Guest checkout |
+| TC07 | Required-field validation on checkout |
+| TC08 | Clear shopping cart |
+| TC09 | Update product quantity |
+| TC10 | Submit product review |
 
-public class NewTest extends BaseTest {
-    
-    @Test
-    public void testNewFeature(ITestContext context) {
-        NewPage newPage = new NewPage();
-        newPage.submitForm("testuser");
-        // Add assertions here
-    }
-}
-```
+## Known Product Defect
 
-## 🔄 Git Workflow
+`TC08.userCanClearCart` is expected to fail against the current demo site because clicking `.clear-cart` and accepting the confirmation alert does not actually remove `AirPods` from the cart.
 
-### Branch Strategy
-- `main` - Production code
-- `develop` - Development branch (current working branch)
-- `feature/*` - New features
-- `fix/*` - Bug fixes
+The framework intentionally keeps this as a real failure instead of forcing a false pass.
 
-### Workflow
-1. Create feature branch from `develop`
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/my-feature
-   ```
+## Notes
 
-2. Make changes and commit
-   ```bash
-   git add .
-   git commit -m "feat: add new feature"
-   ```
-
-3. Push and create Pull Request
-   ```bash
-   git push origin feature/my-feature
-   ```
-
-4. Request review at: thuong.dang@agest.vn
-
-## 🐛 Troubleshooting
-
-### WebDriver not found
-Ensure Chrome browser is installed. Selenium Manager will automatically download the correct ChromeDriver.
-
-### Tests fail with "Element not found"
-- Increase timeout in config
-- Check if selectors are correct
-- Verify element is not in an iframe
-
-### Allure report not generated
-- Ensure tests ran successfully
-- Check `target/allure-results` folder
-- Verify Allure TestNG listener is configured
-
-## 📚 Additional Resources
-
-- [Selenium Documentation](https://www.selenium.dev/documentation/)
-- [TestNG Documentation](https://testng.org/doc/)
-- [Allure Report](https://docs.qameta.io/allure/)
-- [Page Object Model](https://www.selenium.dev/documentation/test_practices/encouraged_page_object_models/)
-
-## 📝 License
-
-This project is for learning and demonstration purposes.
+- Local drivers under `drivers/` are ignored by Git.
+- Retry attempts can make TestNG report more executed methods than the 10 logical test classes.
+- TC03 uses a data provider with 3 payment methods, so it contributes 3 test invocations.

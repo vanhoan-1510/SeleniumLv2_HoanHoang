@@ -1,5 +1,6 @@
 package com.hoanhoang.tests;
 
+import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.MyAccountPage;
 import com.hoanhoang.pages.OrderHistoryPage;
 import org.testng.annotations.BeforeMethod;
@@ -20,8 +21,9 @@ public class TC05 extends BaseTest {
     public void tc5_verifyOrdersInOrderHistory() {
         MyAccountPage myAccountPage = new MyAccountPage();
         OrderHistoryPage orderHistoryPage = new OrderHistoryPage();
+        HeaderComponent header = new HeaderComponent();
 
-        myAccountPage.goToMyAccountPage();
+        header.goToMyAccountPage();
         myAccountPage.clickOnOrders();
 
         orderHistoryPage.verifyMinimumOrderCount(2);

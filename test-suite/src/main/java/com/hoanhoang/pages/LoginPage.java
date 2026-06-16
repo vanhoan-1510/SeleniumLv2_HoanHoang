@@ -13,5 +13,9 @@ public class LoginPage extends BasePage {
         $(passwordFile).type(password);
         $(loginButton).click();
     }
+
+    public boolean isLoginFormVisible() {
+        return $(usernameFile).isVisible();
+    }
 }
 
