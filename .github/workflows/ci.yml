@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_ui:
+        description: "Also run the UI suite (headless Chrome) against the demo site"
+        type: boolean
+        default: false
+
+jobs:
+  # Fast, browser-free checks. Required for every PR.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: chmod +x mvnw
+      - name: Check code format (Spotless)
+        run: ./mvnw -B spotless:check
+      - name: Compile and static analysis (SpotBugs)
+        run: ./mvnw -B compile spotbugs:check
+      - name: Framework tests (no browser)
+        run: ./mvnw -B "-Dtest=FrameworkTest" test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: framework-test-results
+          path: test-output/
+
+  # Real UI run. Manual only: the demo site is shared and intermittently unavailable,
+  # so it must not block pull requests.
+  ui:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_ui
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      TEST_CREDENTIALS_FILE: ${{ runner.temp }}/test-credentials.json
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: chmod +x mvnw
+      - name: Prepare private test accounts
+        shell: bash
+        env:
+          TEST_CREDENTIALS_JSON: ${{ secrets.TEST_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "$TEST_CREDENTIALS_JSON" ]; then
+            echo "Configure the TEST_CREDENTIALS_JSON repository Actions secret before running UI tests."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$TEST_CREDENTIALS_JSON" > "$TEST_CREDENTIALS_FILE"
+      - name: UI suite (headless Chrome, testng.xml)
+        run: ./mvnw -B "-Dheadless=true" test
+      - name: Allure report
+        if: always()
+        run: ./mvnw -B allure:report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ui-test-results
+          path: |
+            target/site/allure-maven-plugin/
+            target/allure-results/
+            logs/
+            test-output/

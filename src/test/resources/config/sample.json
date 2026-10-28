@@ -1,0 +1,14 @@
+{
+  "baseUrl": "https://demo.testarchitect.com",
+  "browser": "chrome",
+  "headless": false,
+  "remote": false,
+  "gridUrl": "",
+  "pollingInterval": 200,
+  "elementTimeout": 10,
+  "actionTimeout": 10,
+  "navigationTimeout": 30,
+  "uiTimeoutMs": 15000,
+  "windowWidth": 1920,
+  "windowHeight": 1080
+}

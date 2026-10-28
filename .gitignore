@@ -9,6 +9,10 @@ out/
 target/
 **/target/
 *.class
+/screenshots/*
+!/screenshots/.gitkeep
+/test-output/*
+!/test-output/.gitkeep
 
 # Allure
 .allure/
@@ -31,3 +35,18 @@ Thumbs.db
 #claude
 .claude
 .gitnexus
+
+# Local browser binaries / Selenium Manager cache
+/chrome/
+/chromedriver/
+se-metadata.json
+
+# Java upgrade / modernize tooling output
+.github/modernize/
+.github/java-upgrade/
+
+# Framework logs
+/logs/
+
+# Private test accounts (kept outside classpath resources and reports)
+/.local/

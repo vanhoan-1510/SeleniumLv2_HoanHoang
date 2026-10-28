@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Console: INFO and above. File logs/test.log: everything from DEBUG, overwritten each run. -->
+<Configuration status="WARN">
+    <Properties>
+        <Property name="pattern">%d{HH:mm:ss.SSS} [%t] %-5level %msg%n</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${pattern}"/>
+            <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
+        </Console>
+        <File name="File" fileName="logs/test.log" append="false">
+            <PatternLayout pattern="${pattern}"/>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Logger name="com.hoanhoang" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Logger>
+        <Root level="WARN">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
+</Configuration>
