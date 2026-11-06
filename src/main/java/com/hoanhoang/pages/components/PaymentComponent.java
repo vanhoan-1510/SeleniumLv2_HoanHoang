@@ -1,54 +1,59 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+import static com.hoanhoang.core.element.ElementFactory.$$;
+
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.pages.support.ApplicationWait;
-import java.util.List;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 public class PaymentComponent {
-    private By locator(PaymentMethod method) {
-        return By.id(
-                switch (method) {
-                    case BANK_TRANSFER -> "payment_method_bacs";
-                    case CHEQUE -> "payment_method_cheque";
-                    case COD -> "payment_method_cod";
-                });
-    }
+    private static final String PAYMENT_LABEL_SELECTOR = "label[for='%s']";
+    private final Element bankTransferOption = $(By.id("payment_method_bacs"));
+    private final Element chequeOption = $(By.id("payment_method_cheque"));
+    private final Element cashOnDeliveryOption = $(By.id("payment_method_cod"));
+    private final Elements selectedOptions =
+            $$(By.cssSelector("input[name='payment_method']:checked"));
 
     public void select(PaymentMethod method) {
         ApplicationWait.idle();
-        By input = locator(method);
-        WebElement option =
-                UiWait.until(
-                        "Payment option present: " + method,
-                        d -> d.findElements(input).stream().findFirst().orElse(null));
+        Element option = paymentOption(method);
+        option.waitUntilPresent();
         if (!option.isSelected()) {
-            if (option.isDisplayed()) {
-                UiWait.click(input);
+            if (option.isVisible()) {
+                option.click();
             } else {
-                UiWait.click(By.cssSelector("label[for='" + option.getAttribute("id") + "']"));
+                paymentLabel(option.getDomAttribute("id")).click();
             }
         }
-        UiWait.until("Payment method selected: " + method, d -> d.findElement(input).isSelected());
+        option.waitUntilSelected();
         ApplicationWait.idle();
     }
 
     public String getSelectedMethod() {
         ApplicationWait.idle();
-        return UiWait.until(
+        return selectedOptions.waitUntil(
                 "Selected payment method label",
-                d -> {
-                    List<WebElement> selected =
-                            d.findElements(By.cssSelector("input[name='payment_method']:checked"));
+                selected -> {
                     if (selected.isEmpty()) {
                         return null;
                     }
-                    String id = selected.get(0).getAttribute("id");
-                    return d.findElement(By.cssSelector("label[for='" + id + "']"))
-                            .getText()
-                            .trim();
+                    String id = selected.getFirst().getDomAttribute("id");
+                    return paymentLabel(id).readSnapshot(Element::getText);
                 });
+    }
+
+    private Element paymentOption(PaymentMethod method) {
+        return switch (method) {
+            case BANK_TRANSFER -> bankTransferOption;
+            case CHEQUE -> chequeOption;
+            case COD -> cashOnDeliveryOption;
+        };
+    }
+
+    private Element paymentLabel(String optionId) {
+        return $(By.cssSelector(PAYMENT_LABEL_SELECTOR.formatted(optionId)));
     }
 }

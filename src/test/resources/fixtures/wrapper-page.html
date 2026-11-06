@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Wrapper browser fixture</title></head>
+<body>
+<h1>Wrapper browser fixture</h1>
+<select name="orderby" onchange="replaceCatalog()">
+  <option value="default">Default</option>
+  <option value="price">Low to high</option>
+  <option value="price-desc">High to low</option>
+</select>
+<div class="products-grid">
+  <div class="content-product">
+    <div class="product-image-wrapper">
+      <footer class="footer-product" style="display:none">
+        <a href="#" class="add_to_cart_button" data-product_id="42"
+           onclick="event.preventDefault(); window.hoverCartClicks++">Hover cart</a>
+      </footer>
+    </div>
+    <div class="product-details">
+    <h2 class="product-title">AirPods</h2>
+    <span class="price"><span class="amount">$10.00</span></span>
+    <a href="#" class="add_to_cart_button" data-product_id="42"
+       onclick="event.preventDefault(); this.classList.add('added'); this.closest('.content-product').querySelector('.footer-product').style.display='block'; window.catalogAdds++">Add to cart</a>
+    </div>
+  </div>
+</div>
+<table class="shop_table cart"><tbody>
+  <tr class="cart_item">
+    <td class="product-title">AirPods</td>
+    <td class="product-price"><span class="amount">$10.00</span></td>
+    <td class="product-quantity">
+      <button type="button" class="minus" onclick="adjustQuantity(this, -1)">-</button>
+      <input class="qty" type="number" value="1" onchange="scheduleCartUpdate(this)">
+      <button type="button" class="plus" onclick="adjustQuantity(this, 1)">+</button>
+    </td>
+    <td class="product-subtotal"><span class="amount">$10.00</span></td>
+    <td><a href="#" class="remove-item"
+           onclick="event.preventDefault(); this.closest('tr').remove()">Remove</a></td>
+  </tr>
+</tbody></table>
+<button type="button" name="update_cart"
+        onclick="if (event.isTrusted) window.manualCartUpdates++; saveQuantity(document.querySelector('input.qty'))">UPDATE CART</button>
+<form class="checkout" onsubmit="return false">
+  <div class="woocommerce-billing-fields">
+    <p id="billing_first_name_field" class="form-row validate-required"><input id="billing_first_name" aria-label="First name"></p>
+    <p id="billing_last_name_field" class="form-row validate-required"><input id="billing_last_name" aria-label="Last name"></p>
+    <p id="billing_address_1_field" class="form-row validate-required"><input id="billing_address_1" aria-label="Address"></p>
+    <p id="billing_city_field" class="form-row validate-required"><input id="billing_city" aria-label="City"></p>
+    <p id="billing_postcode_field" class="form-row validate-required"><input id="billing_postcode" aria-label="Postcode"></p>
+    <p id="billing_phone_field" class="form-row validate-required"><input id="billing_phone" aria-label="Phone"></p>
+    <p id="billing_email_field" class="form-row validate-required"><input id="billing_email" aria-label="Billing email"></p>
+  </div>
+  <input id="payment_method_bacs" name="payment_method" type="radio" style="display:none" checked>
+  <label for="payment_method_bacs">Direct bank transfer</label>
+  <input id="payment_method_cheque" name="payment_method" type="radio" style="display:none">
+  <label for="payment_method_cheque">Check payments</label>
+  <input id="payment_method_cod" name="payment_method" type="radio" style="display:none">
+  <label for="payment_method_cod">Cash on delivery</label>
+</form>
+<form id="fixture-login" onsubmit="return false">
+  <input id="username" aria-label="Username">
+  <input id="password" type="password" aria-label="Password">
+  <button name="login" type="button"
+          onclick="document.body.innerHTML='<p>There has been a critical error on this website</p>'">Login</button>
+</form>
+<a id="tab_reviews" href="#reviews"
+   onclick="event.preventDefault(); document.getElementById('reviews').style.display='block'">Reviews</a>
+<div id="reviews">
+  <ol class="commentlist"></ol>
+  <input id="rating" type="hidden" value="0">
+  <p class="stars"><a class="star-4" href="#"
+       onclick="event.preventDefault(); document.getElementById('rating').value='4'">4 stars</a></p>
+  <input id="author" aria-label="Review author">
+  <input id="email" aria-label="Review email">
+  <textarea id="comment" aria-label="Review comment"></textarea>
+  <button id="submit" type="button" onclick="publishReview()">Submit review</button>
+</div>
+<script>
+  window.billingChanges = 0;
+  window.manualCartUpdates = 0;
+  window.cartInputChanges = 0;
+  window.jQuery = {active: 0};
+  window.sortChanges = 0;
+  window.catalogAdds = 0;
+  window.hoverCartClicks = 0;
+  document.addEventListener('change', event => {
+    if (event.target.id.startsWith('billing_')) window.billingChanges++;
+    if (event.target.matches('input.qty')) window.cartInputChanges++;
+  });
+  function replaceCatalog() {
+    window.sortChanges++;
+    const card = document.querySelector('.content-product');
+    card.replaceWith(card.cloneNode(true));
+  }
+  function adjustQuantity(button, delta) {
+    const input = button.closest('td').querySelector('.qty');
+    input.value = Number(input.value) + delta;
+    input.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  let cartUpdateTimer;
+  function scheduleCartUpdate(input) {
+    clearTimeout(cartUpdateTimer);
+    cartUpdateTimer = setTimeout(() => {
+      document.querySelector('[name="update_cart"]').click();
+    }, window.cartAutoUpdateDelay ?? 1500);
+  }
+  function saveQuantity(input) {
+    window.jQuery.active++;
+    const quantity = Number(input.value);
+    setTimeout(() => {
+      const row = input.closest('tr');
+      const replacement = row.cloneNode(true);
+      const updated = replacement.querySelector('.qty');
+      const serverQuantity = window.cartResponseQuantity ?? quantity;
+      updated.setAttribute('value', String(serverQuantity));
+      updated.value = String(serverQuantity);
+      replacement.querySelector('.product-subtotal .amount').textContent =
+        window.cartResponseSubtotal ?? ('$' + serverQuantity * 10);
+      row.replaceWith(replacement);
+      window.jQuery.active--;
+    }, 75);
+  }
+  function publishReview() {
+    if (window.reviewError) {
+      const error = document.createElement('div');
+      error.className = 'woocommerce-error';
+      error.textContent = window.reviewError;
+      document.getElementById('reviews').prepend(error);
+      return;
+    }
+    const row = document.createElement('li');
+    row.className = 'review';
+    if (window.reviewHidden) row.style.display = 'none';
+    const comment = document.createElement('p');
+    comment.className = 'description';
+    comment.textContent = document.getElementById('comment').value;
+    const stars = document.createElement('span');
+    stars.className = 'star-rating';
+    stars.setAttribute('aria-label', 'Rated ' +
+      (window.reviewResponseRating ?? document.getElementById('rating').value) + ' out of 5');
+    if (window.reviewPending) {
+      const approval = document.createElement('em');
+      approval.className = 'woocommerce-review__awaiting-approval';
+      approval.textContent = 'Your review is awaiting approval';
+      row.append(approval);
+    }
+    row.append(comment, stars);
+    document.querySelector('#reviews .commentlist').append(row);
+    document.getElementById('submit').remove();
+    document.getElementById('reviews').style.display = 'none';
+  }
+</script>
+</body>
+</html>

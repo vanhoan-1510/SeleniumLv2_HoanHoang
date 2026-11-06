@@ -1,30 +1,45 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+
+import com.hoanhoang.core.element.Element;
 import com.hoanhoang.data.model.BillingDetails;
 import com.hoanhoang.pages.support.ApplicationWait;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
 
 public class BillingFormComponent {
+    private final Element firstNameInput = $(By.id("billing_first_name"));
+    private final Element lastNameInput = $(By.id("billing_last_name"));
+    private final Element addressInput = $(By.id("billing_address_1"));
+    private final Element cityInput = $(By.id("billing_city"));
+    private final Element postcodeInput = $(By.id("billing_postcode"));
+    private final Element postcodeField = $(By.id("billing_postcode_field"));
+    private final Element phoneInput = $(By.id("billing_phone"));
+    private final Element emailInput = $(By.id("billing_email"));
+
     public void fill(BillingDetails billing) {
-        type("billing_first_name", billing.firstName());
-        type("billing_last_name", billing.lastName());
-        type("billing_address_1", billing.address());
-        type("billing_city", billing.city());
-        type("billing_postcode", billing.postcode());
-        type("billing_phone", billing.phone());
-        if (UiWait.isVisible(By.id("billing_email"))) {
-            type("billing_email", billing.email());
+        type(firstNameInput, billing.firstName());
+        type(lastNameInput, billing.lastName());
+        type(addressInput, billing.address());
+        type(cityInput, billing.city());
+        type(postcodeInput, billing.postcode());
+        type(phoneInput, billing.phone());
+        if (emailInput.isVisible()) {
+            type(emailInput, billing.email());
         }
         ApplicationWait.idle();
     }
 
-    private void type(String id, String value) {
-        WebElement input = UiWait.clickable(By.id(id));
-        input.clear();
-        input.sendKeys(value);
-        input.sendKeys(Keys.TAB);
+    public boolean isPostcodeRequired() {
+        return postcodeField.readSnapshot(
+                field ->
+                        field.isVisible()
+                                && String.valueOf(field.getDomAttribute("class"))
+                                        .contains("validate-required"));
+    }
+
+    private void type(Element input, String value) {
+        input.type(value);
+        input.blur();
     }
 }

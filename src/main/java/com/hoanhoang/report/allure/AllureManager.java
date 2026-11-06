@@ -4,10 +4,13 @@ import com.hoanhoang.core.driver.DriverManager;
 import io.qameta.allure.Allure;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
+import org.openqa.selenium.logging.LogType;
 
 public final class AllureManager {
     private AllureManager() {}
@@ -41,8 +44,8 @@ public final class AllureManager {
                 || !DriverManager.hasDriver()) {
             return;
         }
+        WebDriver driver = DriverManager.getDriver();
         try {
-            WebDriver driver = DriverManager.getDriver();
             attachText(
                     "Browser location",
                     "URL: " + driver.getCurrentUrl() + "\nTitle: " + driver.getTitle());
@@ -56,6 +59,24 @@ public final class AllureManager {
             }
         } catch (WebDriverException e) {
             attachText("Browser context unavailable", e.getClass().getSimpleName());
+        }
+        attachBrowserConsole(driver);
+    }
+
+    private static void attachBrowserConsole(WebDriver driver) {
+        try {
+            String messages =
+                    driver.manage().logs().get(LogType.BROWSER).getAll().stream()
+                            .filter(
+                                    entry ->
+                                            entry.getLevel().intValue() >= Level.WARNING.intValue())
+                            .map(entry -> entry.getLevel() + ": " + entry.getMessage())
+                            .collect(Collectors.joining("\n"));
+            if (!messages.isBlank()) {
+                attachText("Browser console warnings/errors", messages);
+            }
+        } catch (WebDriverException | UnsupportedOperationException e) {
+            attachText("Browser console unavailable", e.getClass().getSimpleName());
         }
     }
 }

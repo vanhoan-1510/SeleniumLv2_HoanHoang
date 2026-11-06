@@ -2,14 +2,23 @@ package com.hoanhoang.unit.checks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoanhoang.unit.support.ChildProcesses;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 public class CredentialChecks {
+    private final ChildProcesses children = new ChildProcesses();
+
+    @AfterMethod(alwaysRun = true)
+    public void stopChildProcesses() {
+        children.close();
+    }
+
     @Test
     public void credentialsResolveWithoutPublishingOrFallingBackFromInvalidOverrides()
             throws Exception {
@@ -65,19 +74,13 @@ public class CredentialChecks {
             if (List.of("environment", "configured", "missing", "malformed").contains(mode)) {
                 builder.environment().put("TEST_CREDENTIALS_FILE", environment.toString());
             }
-            Process child = builder.start();
-            try {
-                assertThat(child.waitFor(20, TimeUnit.SECONDS))
-                        .as("Credentials mode %s", mode)
-                        .isTrue();
-                String log = Files.readString(output);
-                assertThat(log).doesNotContain("private-sentinel-value");
-                assertThat(child.exitValue()).as("Credentials mode %s: %s", mode, log).isZero();
-            } finally {
-                if (child.isAlive()) {
-                    child.destroyForcibly();
-                }
-            }
+            Process child = children.start(builder);
+            assertThat(child.waitFor(20, TimeUnit.SECONDS))
+                    .as("Credentials mode %s", mode)
+                    .isTrue();
+            String log = Files.readString(output);
+            assertThat(log).doesNotContain("private-sentinel-value");
+            assertThat(child.exitValue()).as("Credentials mode %s: %s", mode, log).isZero();
         }
     }
 

@@ -1,6 +1,8 @@
 package com.hoanhoang.pages;
 
 import com.hoanhoang.core.driver.DriverManager;
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import com.hoanhoang.core.util.UiWait;
 import com.hoanhoang.data.model.CartItem;
 import com.hoanhoang.pages.components.CartTableComponent;
@@ -13,8 +15,11 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 
 public class ShoppingCartPage extends BasePage {
     private final CartTableComponent table = new CartTableComponent();
-    private final By emptyMessage =
-            By.cssSelector(".cart-empty, .empty-cart-block, .cart-empty-page");
+    private final Element emptyMessage =
+            $(By.cssSelector(".cart-empty, .empty-cart-block, .cart-empty-page"));
+    private final Element checkoutButton = $(By.cssSelector("a.checkout-button"));
+    private final Element clearCartButton = $(By.cssSelector(".clear-cart"));
+    private final Elements headings = $$(By.tagName("h1"));
 
     public void waitUntilLoaded() {
         ApplicationWait.idle();
@@ -37,23 +42,13 @@ public class ShoppingCartPage extends BasePage {
         return table.getItem(name);
     }
 
-    public boolean isProductTableVisible() {
-        return table.isVisible();
-    }
-
-    @Step("Remove {name} from cart")
-    public void removeProduct(String name) {
-        waitUntilLoaded();
-        table.removeProduct(name);
-    }
-
     @Step("Remove all products from cart")
     public void removeAllProducts() {
         waitUntilLoaded();
         table.removeAll();
     }
 
-    @Step("Set quantity {quantity} for {name} and wait for the cart update")
+    @Step("Set quantity {quantity} for {name}, click UPDATE CART and wait for the response")
     public void setQuantity(String name, int quantity) {
         table.setQuantity(name, quantity);
     }
@@ -71,37 +66,36 @@ public class ShoppingCartPage extends BasePage {
     @Step("Click 'Proceed to checkout'")
     public void clickCheckoutButton() {
         ApplicationWait.idle();
-        UiWait.click(By.cssSelector("a.checkout-button"));
+        checkoutButton.click();
     }
 
     @Step("Click 'Clear shopping cart' and confirm")
     public void clearCartUsingClearCartButton() {
-        UiWait.click(By.cssSelector(".clear-cart"));
+        clearCartButton.click();
         UiWait.until("Clear-cart confirmation alert", ExpectedConditions.alertIsPresent()).accept();
         ApplicationWait.idle();
     }
 
     public boolean isEmptyCartMessageVisible() {
-        return UiWait.isVisible(emptyMessage)
-                || DriverManager.getDriver().findElements(By.tagName("h1")).stream()
-                        .anyMatch(
-                                e ->
-                                        e.isDisplayed()
-                                                && e.getText()
-                                                        .toUpperCase(Locale.ROOT)
-                                                        .contains("YOUR SHOPPING CART IS EMPTY"));
+        return emptyMessage.isVisible()
+                || headings.visible()
+                        .readSnapshot(
+                                visibleHeadings ->
+                                        visibleHeadings.stream()
+                                                .anyMatch(
+                                                        e ->
+                                                                e.getText()
+                                                                        .toUpperCase(Locale.ROOT)
+                                                                        .contains(
+                                                                                "YOUR SHOPPING CART IS EMPTY")));
     }
 
     public String getEmptyCartMessage() {
-        if (UiWait.isVisible(emptyMessage)) {
-            return UiWait.visible(emptyMessage).getText().trim();
+        if (emptyMessage.isVisible()) {
+            return emptyMessage.getText();
         }
-        return DriverManager.getDriver().findElements(By.tagName("h1")).stream()
-                .filter(
-                        e ->
-                                e.isDisplayed()
-                                        && e.getText().toUpperCase(Locale.ROOT).contains("EMPTY"))
-                .map(e -> e.getText().trim())
+        return headings.visible().map(Element::getText).stream()
+                .filter(text -> text.toUpperCase(Locale.ROOT).contains("EMPTY"))
                 .findFirst()
                 .orElse("");
     }

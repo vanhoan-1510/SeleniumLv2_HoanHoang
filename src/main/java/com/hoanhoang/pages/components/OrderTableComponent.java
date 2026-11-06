@@ -1,48 +1,51 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+import static com.hoanhoang.pages.components.TableComponent.requiredCellValue;
+
+import com.hoanhoang.core.element.Element;
 import com.hoanhoang.data.model.OrderSummary;
 import com.hoanhoang.data.util.PriceUtils;
+import com.hoanhoang.pages.support.ApplicationWait;
 import java.time.LocalDate;
 import java.util.List;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 public class OrderTableComponent {
     private static final By TABLE =
             By.cssSelector("table.account-orders-table, table.woocommerce-orders-table");
     private static final By ORDER_LINK = By.cssSelector("td[data-title='Order'] a");
+    private static final By ROWS =
+            By.cssSelector(
+                    "table.account-orders-table tbody tr, table.woocommerce-orders-table tbody tr");
+    private static final By DATE = By.cssSelector("time");
+    private static final By TOTAL = By.cssSelector("td[data-title='Total'] .amount");
+    private static final By STATUS = By.cssSelector("td[data-title='Status']");
     private final TableComponent<OrderSummary> table =
             new TableComponent<>(
-                    TABLE,
-                    By.cssSelector(
-                            "table.account-orders-table tbody tr, table.woocommerce-orders-table tbody tr"),
-                    OrderTableComponent::toOrder,
-                    OrderTableComponent::orderNumber);
+                    TABLE, ROWS, OrderTableComponent::toOrder, OrderTableComponent::orderNumber);
 
-    private static String orderNumber(WebElement row) {
-        return row.findElement(ORDER_LINK).getText().replace("#", "").trim();
+    private static String orderNumber(Element row) {
+        return row.find(ORDER_LINK).getText().replace("#", "").trim();
     }
 
-    private static OrderSummary toOrder(WebElement row) {
+    private static OrderSummary toOrder(Element row) {
         return new OrderSummary(
                 orderNumber(row),
                 LocalDate.parse(
-                        row.findElement(By.cssSelector("time"))
-                                .getAttribute("datetime")
+                        requiredCellValue(row.find(DATE).getDomAttribute("datetime"), "order date")
                                 .substring(0, 10)),
-                PriceUtils.parse(
-                        row.findElement(By.cssSelector("td[data-title='Total'] .amount"))
-                                .getText()),
-                row.findElement(By.cssSelector("td[data-title='Status']")).getText().trim());
-    }
-
-    public boolean isVisible() {
-        return table.isVisible();
+                PriceUtils.parse(requiredCellValue(row.find(TOTAL).getText(), "order total")),
+                row.find(STATUS).getText());
     }
 
     public List<OrderSummary> getOrders() {
-        UiWait.visible(TABLE);
+        $(TABLE).waitUntil(
+                        "Order history table displayed",
+                        history -> {
+                            ApplicationWait.failIfCriticalError();
+                            return history.isVisible();
+                        });
         return table.getRows();
     }
 }

@@ -53,7 +53,7 @@ src/main/java/com/hoanhoang
 │   ├── driver      BrowserType, DriverFactory (factory), DriverManager (ThreadLocal, one driver per thread)
 │   ├── element     Element/$(), Elements/$$(), Condition                  (element wrapper + checks)
 │   ├── exception   ConfigLoadException, DriverInitializationException
-│   └── util        UiWait, JsonMapper                                     (shared waits/actions and Gson JSON I/O)
+│   └── util        UiWait, JavaScript, JsonMapper                          (wait engine, script execution, JSON I/O)
 ├── data
 │   ├── model       DTOs/records: UserDto, BillingDetails, ReviewData, Product, CartItem, OrderItem, ...
 │   ├── builder     BillingBuilder
@@ -69,17 +69,19 @@ src/main/java/com/hoanhoang
     └── logger      Log (step/debug/info/warn/error), AllureStepLogger
 
 src/test/java/com/hoanhoang
-├── tests           BaseTest, TC01 … TC10
-│   └── support     PurchaseAssertions, OrderFixture (TC05 precondition), CartUpdateTrace (TC09 diagnostics)
+├── tests           BaseTest and functional test classes (SingleProductPurchaseTest, CartQuantityTest, ...)
+│   └── support     PurchaseAssertions, OrderFixture, TestSession, SuiteConfiguration
+├── integration     WrapperBrowserTest; support/HtmlFixture (local HTML loading)
 └── unit
     ├── FrameworkTest   TestNG factory; stable Maven entry point, no browser
-    ├── checks/        ConfigDataChecks, CredentialChecks, ElementDriverChecks, PurchaseChecks, RetryChecks
-    └── support/       TestDoubles, RetryLifecycleProbe, CredentialSourceProbe
+    ├── checks/        ConfigDataChecks, CredentialChecks, ElementDriverChecks, PurchaseChecks, RetryChecks, WrapperChecks
+    └── support/       TestDoubles, RetryLifecycleProbe, CredentialSourceProbe, ChildProcesses
 
 src/test/resources
 ├── config/         dev.json, prod.json, sample.json
 ├── testdata/       test-credentials.json, test-review.json, payment-methods.json
-├── testng.xml      suite: TC01–TC10, parallel by class
+├── fixtures/       wrapper-page.html (synthetic browser-test document)
+├── testng.xml      suite: 10 functional test classes, parallel by class
 └── log4j2.xml      logging configuration
 ```
 
@@ -89,10 +91,24 @@ Layering:
   `placeOrder()`) and do all checking (AssertJ / `shouldHave`).
   Steps are grouped by preparation, action and verification. Longer assertion blocks live in
   named helpers inside the test class; reusable cart/order checks live in `PurchaseAssertions`.
+  Test classes, including `BaseTest` and unit/integration checks, contain no `try` blocks.
+  Resource management belongs in support fixtures. Teardown uses
+  `@AfterMethod(alwaysRun = true)`; `TestSession` releases accounts even if browser shutdown
+  fails. Scenario methods contain direct business actions and assertions. Expected exceptions use
+  assertions such as `assertThatThrownBy(...)`.
 - **Pages/components** perform actions and read state. Tests explicitly invoke check helpers
   such as `haveTitle()` and `shouldHave(...)`; business actions do not assert scenario outcomes.
 - **Core** hides Selenium details: waits, element wrapper, driver lifecycle.
+- **Element wrappers** own DOM polling and JavaScript actions. `JavaScript.execute(...)` is the
+  shared browser-script entry point; `UiWait` supplies the wait engine and browser/page waits.
+- **Pages/components** use `Element` and `Elements` for DOM access. Raw `WebElement`,
+  child-element lookup, Selenium `Select` and node-staleness checks stay inside core.
+  Browser navigation and application-specific JavaScript readiness checks remain separate.
 - **pages/support/ApplicationWait** holds this site's jQuery, WooCommerce and theme readiness rules.
+  Readiness timeouts include document state, active jQuery requests, visible blockers and recent
+  checkout-update HTTP statuses/timings in the exception and an Allure attachment. The original
+  timeout remains the cause; a resource-timing status of 0/null is unavailable, not a success.
+  Login and checkout waits also detect WordPress critical-error pages before waiting for missing UI.
 
 ---
 
@@ -131,41 +147,87 @@ size as a fallback; headless runs use `windowWidth` and `windowHeight`.
 
 ### Element wrapper
 
+Keep fixed element fields at the top of their owning page or component. Actions refer to
+these fields instead of declaring locators inline:
+
+```java
+private final Element usernameInput = $(By.id("username"));
+private final Element loginButton = $(By.name("login"));
+
+public void enterUsername(String username) {
+    usernameInput.type(username);
+}
+```
+
+Use `private static final By` for child selectors applied within a product card or table row.
+Keep dynamic selector templates at the top too, with named helpers such as `ratingStar(rating)`
+and `addToCartButton(productId)`. Keep each locator in its owning class.
+
+Wrapper API examples (selector construction shown explicitly):
+
 ```java
 $(By.id("username")).type("user");
 $(By.name("login")).click();
 $(locator).hover();  $(locator).jsClick();
-$$(By.cssSelector(".product")).getTexts();
+$$(By.cssSelector(".product")).map(Element::getText);
+$(By.name("orderby")).selectByValue("price");
+$(By.id("billing_email")).blur();
+
+// Child queries resolve their parent again when the DOM changes:
+Element quantity = $(By.cssSelector(".cart_item")).find(By.cssSelector("input.qty"));
+quantity.replaceTextAndBlur("4");
 
 // Checks wait (auto-retry) until they pass, otherwise fail with expected vs actual:
 success.confirmationMessage().shouldHaveText("Thank you");      // contains, ignore case
 $(locator).shouldHaveExactText("Cart updated.");
 $(quantityInput).shouldHaveValue("4");
-$(checkbox).shouldHaveProp("checked", "true");
 $(locator).shouldHave(Condition.text("..."));
 shopPage.haveTitle(ShopPage.TITLE);
 ```
 
 Actions wait until the element is visible/enabled before acting. Every check is recorded as an
 Allure step and a log line, including checks that pass.
-`ElementFactory` provides both `$` and `$$`. Wrapped clicks and `UiWait.click` use the same
-implementation, including re-resolution when a node becomes stale before dispatch.
+`ElementFactory` provides both `$` and `$$`. Wrapped clicks scroll the target into view and
+resolve it again when a node becomes stale before dispatch.
+
+`waitUntilPresent()` and `waitUntilSelected()` support hidden inputs; `waitUntilVisible()`
+waits for a visible target. Collections provide `waitUntilNotEmpty()` and
+`waitUntilSizeLessThan(count)` and return live queries for subsequent actions.
+For custom DOM conditions, `Element.waitUntil(description, condition)` and
+`Elements.waitUntil(description, condition)` resolve fresh read-only snapshots per polling
+attempt. A null result or `false` retries; any other result completes the wait. These custom
+waits use `uiTimeoutMs` and `pollingInterval`. Snapshot callbacks cannot perform actions or
+start nested waits. Use immediate reads inside an existing browser/page wait.
 
 `$$().get(index)`, `first()`, `last()` and `filter(...)` resolve the current DOM again during
 checks, so AJAX node replacement can recover. An index refers to the current position, not
 the original product identity. Filtering predicates must only read state; their snapshot reads
-do not start nested waits, so a stale node can return to the collection's retry loop. Wrapping a raw
-`WebElement` is a snapshot and cannot recover its identity after replacement.
+do not start nested waits, so a stale node can return to the collection's retry loop.
+
+`find` and `findAll` keep the parent query, so nested lookups also follow DOM replacement.
+`getDomAttribute` and `getDomProperty` can read elements that exist but are hidden, such as payment
+radio buttons and the review rating field. `exists`, `isVisible` and `isSelected` are immediate
+state checks; actions still require an appropriate visible/enabled target.
+
+`readSnapshot` and `Elements.map` read fixed nodes within one polling attempt. Their callbacks
+are read-only: child getters do not start their own waits, and actions are rejected. Use them
+inside an outer wait when AJAX can replace a row, and do not retain snapshot elements between
+attempts. `watchForReplacement` captures the original node and returns a condition that detects
+its removal, even when the locator already matches a new node.
 
 Tables use `TableComponent<T>`: read all rows as objects, find a row by its unique key
-(product name, order number) and act inside that row, e.g. `cart.removeProduct("AirPods")`.
-`setQuantity` accepts quantities >= 1; `changeQuantity` accepts only -1 or +1. To remove
-an item, call `removeProduct`.
-Typing a quantity selects the existing value and blurs the input. This theme schedules
-UPDATE CART 1500ms after `change`, so the wrapper waits for that update instead of submitting
-again. Completion checks the input's server-rendered value, quantity and subtotal.
+(product name, order number) and act inside that row.
+`setQuantity` accepts quantities >= 1; `changeQuantity` accepts only -1 or +1.
+`ShoppingCartPage.removeAllProducts()` empties the cart for test preparation.
+Typing a quantity selects the existing value, blurs the input and clicks UPDATE CART,
+as required by TC09. Plus/minus changes use the theme's debounced auto-update (1500ms).
+Both paths wait for the original cart row to be replaced and for application readiness;
+the test then verifies quantity and subtotal independently of the completion wait.
+Blur uses the DOM `blur()` operation; no keyboard navigation key is sent. Billing fields also
+use this wrapper operation after typing. Quantity replacement avoids `clear()` to preserve a
+single change event when replacing the value.
 Cart navigation and reload wait for page readiness. Cart getters read the current table
-snapshot; quantity updates read the matching row once per poll. Tests call
+snapshot; quantity updates watch the original row for replacement. Tests call
 `openShopWithEmptyCart()` explicitly for their shared shopping precondition; browser setup
 in `@BeforeMethod` stays independent of scenario steps.
 
@@ -177,12 +239,12 @@ in `@BeforeMethod` stays independent of scenario steps.
   `billingDetails` (mapped to `BillingDetails`). Each running test leases its own account from
   `AccountPool`, so parallel tests never share a cart.
 - `testdata/test-review.json`: review author (`ReviewData`).
-- `testdata/payment-methods.json`: payment methods for TC03 (`PaymentMethod` enum names).
+- `testdata/payment-methods.json`: payment methods for `PaymentMethodPurchaseTest` (`PaymentMethod` enum names).
 - `JsonMapper` maps JSON <-> objects with Gson.
 - BillingDetails and ReviewData use record accessors such as `firstName()` and `email()`.
-- `BillingBuilder` creates variants: `BillingBuilder.blank().build()` (TC07),
+- `BillingBuilder` creates variants: `BillingBuilder.blank().build()` (`CheckoutValidationTest`),
   `BillingBuilder.from(defaults).withEmail("...").build()`.
-- Data-driven: TC03 runs once per payment method listed in `testdata/payment-methods.json`
+- Data-driven: `PaymentMethodPurchaseTest` runs once per payment method listed in `testdata/payment-methods.json`
   (`@DataProvider` → `TestDataManager.getPaymentMethods()`). Choosing which existing `PaymentMethod` values run needs no code change.
 
 Before running UI tests on a fresh clone:
@@ -222,12 +284,11 @@ with both accounts and `billingDetails`, following the committed sample's struct
 ### Report
 
 Allure collects results in `target/allure-results`: every page action and check as a step,
-a screenshot, URL/title and page source on failure, and the random product selection
+a screenshot, URL/title, page source and browser-console warnings/errors (when supported) on
+failure, and the random product selection
 (with its seed) as an attachment. Login uses a programmatic step so the password argument
 is not serialized as a step parameter. Old results generated before this fix retain their data;
 generate a fresh result directory when checking or sharing the fix.
-TC09 also attaches a cart AJAX trace with submitted quantities, HTTP status and detection of
-WordPress error responses. The trace excludes other request fields such as credentials/nonces.
 
 ```powershell
 .\mvnw.cmd allure:serve      # build and open the report
@@ -244,20 +305,27 @@ and keep full Internet access available for the complete run.
 
 | Goal | Command |
 |---|---|
-| Whole UI suite (testng.xml, 4 classes in parallel) | `.\mvnw.cmd test` |
+| Whole UI suite (up to 4 classes in parallel, capped by account count) | `.\mvnw.cmd test` |
 | Whole UI suite with visible browsers | `.\mvnw.cmd test "-Dheadless=false"` |
 | Headless | `.\mvnw.cmd "-Dheadless=true" test` |
 | Visible browsers, retry each failed test up to 2 times | `.\mvnw.cmd test "-Dheadless=false" "-DretryCount=2"` |
 | Other browser | `.\mvnw.cmd "-Dbrowser=edge" test` |
 | Other environment | `.\mvnw.cmd "-Denv=prod" test` |
-| One test class | `.\mvnw.cmd "-Dtest=TC01" test` |
-| Reproduce a random product choice | `.\mvnw.cmd "-Dtest=TC01" "-Drandom.seed=123" test` |
+| One test class | `.\mvnw.cmd "-Dtest=SingleProductPurchaseTest" test` |
+| Reproduce a random product choice | `.\mvnw.cmd "-Dtest=SingleProductPurchaseTest" "-Drandom.seed=123" test` |
 | Framework checks (no browser) | `.\mvnw.cmd "-Dtest=FrameworkTest" test` |
+| Wrapper checks on local HTML (headless Chrome) | `.\mvnw.cmd "-Dtest=WrapperBrowserTest" test` |
 | Compile only | `.\mvnw.cmd -DskipTests test-compile` |
 
 Framework listeners register through `src/test/resources/META-INF/services/org.testng.ITestNGListener`.
 Failure diagnostics and retry are active for both suite runs and `-Dtest=...`; do not register
 the same listeners again in suite XML.
+
+`WrapperBrowserTest` is optional and runs separately from both `FrameworkTest` and `testng.xml`.
+It uses a synthetic local HTML document and requires no demo accounts. It checks real browser
+behaviour for nested queries, DOM replacement, dropdown selection, hidden payment/rating fields,
+billing blur, cart changes and review submission. Browser/driver resolution may require Internet
+access; this test does not contact the demo website and does not replace testing against it.
 
 Other options:
 
@@ -319,21 +387,28 @@ job needs no secrets and uses fictional fixtures, including for pull requests fr
 
 ## 5. Test cases
 
-| TC | Scenario | Notes |
-|---|---|---|
-| TC01 | Buy one random product from "Electronic Components & Supplies" | Checks cart rows, checkout rows, billing and payment on the order page |
-| TC02 | Buy multiple random products | Compares complete cart and order rows |
-| TC03 | Buy with each payment method | Data-driven: Bank transfer, Check payments, Cash on delivery |
-| TC04 | Sort by price low→high and high→low | Also checks the Shop page title |
-| TC05 | Orders appear in order history | Creates its two orders first (OrderFixture), then finds them by number |
-| TC06 | Guest purchase, grid and list view | No login |
-| TC07 | Mandatory billing fields left blank | Checks the error for each required field |
-| TC08 | Clear shopping cart | Verifies the clear button removes every row and shows the empty-cart message; runs have failed when items remained |
-| TC09 | Update quantity (+, type 4, −), then reload | Uses the theme's debounced update once per change; verifies quantity and subtotal, then persistence after reload |
-| TC10 | Post a review | Requires the exact comment and rating to be published and the review count to increase; pending moderation fails this expectation |
+Test classes are named after their functional area and scenario. The original case IDs remain
+in test descriptions and this table for traceability; use the class name with Maven's `-Dtest`.
+
+| ID | Test class | Scenario | Notes |
+|---|---|---|---|
+| TC01 | `SingleProductPurchaseTest` | Buy one random product from "Electronic Components & Supplies" | Checks cart rows, checkout rows, billing and payment on the order page |
+| TC02 | `MultipleProductPurchaseTest` | Buy multiple random products | Compares complete cart and order rows |
+| TC03 | `PaymentMethodPurchaseTest` | Buy with each payment method | Data-driven: Bank transfer, Check payments, Cash on delivery |
+| TC04 | `ProductSortingTest` | Sort by price low→high and high→low | Also checks the Shop page title |
+| TC05 | `OrderHistoryTest` | Orders appear in order history | Creates its two orders first (OrderFixture), then finds them by number |
+| TC06 | `GuestCheckoutTest` | Guest purchase, grid and list view | No login |
+| TC07 | `CheckoutValidationTest` | Mandatory billing fields left blank | Checks messages and field highlights separately; includes postcode when required by the current form |
+| TC08 | `CartClearTest` | Clear shopping cart | Verifies the clear button removes every row and shows the empty-cart message; runs have failed when items remained |
+| TC09 | `CartQuantityTest` | Update quantity (+, type 4 and click UPDATE CART, −), then reload | Waits for the cart row to be replaced; assertions compare quantity and subtotal, then persistence after reload |
+| TC10 | `ProductReviewTest` | Post a review | Reopens Reviews after submission and verifies the unique submitted comment is visible with the correct stars; does not check review count or require approval |
 
 All test classes can run alone and in parallel. Each invocation, including a retry, starts a fresh
 browser. Logged-in tests lease an account from `AccountPool` and release it during cleanup.
+`SuiteConfiguration` runs before TestNG creates workers and caps UI suite, test and data-provider
+thread counts at the account count. Startup logs show requested and effective suite/provider
+counts without account identities. Explicitly lower limits are preserved; browser-free suites
+keep their own concurrency settings.
 Shopping scenarios explicitly empty the account's cart before adding products. Guest tests use
 their fresh browser session and do not lease a login account; the UI suite setup still requires
 the credentials file, including billing data.
@@ -348,4 +423,4 @@ the credentials file, including billing data.
 - Product names are shown in Title Case on listing/cart pages but as stored on the order page,
   so product names are compared ignoring case.
 - This is a shared demo environment: existing data and availability can change between runs.
-  TC05 creates its own orders, and TC10 uses a unique comment to identify its submitted review.
+  `OrderHistoryTest` creates its own orders, and `ProductReviewTest` uses a unique comment to identify its submitted review.

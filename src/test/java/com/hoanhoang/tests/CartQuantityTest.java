@@ -9,12 +9,11 @@ import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.HomePage;
 import com.hoanhoang.pages.ShopPage;
 import com.hoanhoang.pages.ShoppingCartPage;
-import com.hoanhoang.tests.support.CartUpdateTrace;
 import java.math.BigDecimal;
 import java.util.List;
 import org.testng.annotations.Test;
 
-public class TC09 extends BaseTest {
+public class CartQuantityTest extends BaseTest {
 
     @Test(description = "TC09 - Verify users can update quantity of product in cart")
     public void userCanUpdateQuantityInCart() {
@@ -30,16 +29,14 @@ public class TC09 extends BaseTest {
         cart.reloadAndWaitUntilReady();
         assertCart(cart.getProducts(), List.of(expectedProduct));
 
-        try (var trace = new CartUpdateTrace()) {
-            cart.increaseQuantity(expectedProduct.name());
-            assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 2);
+        cart.increaseQuantity(expectedProduct.name());
+        assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 2);
 
-            cart.setQuantity(expectedProduct.name(), 4);
-            assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 4);
+        cart.setQuantity(expectedProduct.name(), 4);
+        assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 4);
 
-            cart.decreaseQuantity(expectedProduct.name());
-            assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 3);
-        }
+        cart.decreaseQuantity(expectedProduct.name());
+        assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 3);
 
         cart.reloadAndWaitUntilReady();
         assertQuantity(cart.getProduct(expectedProduct.name()), expectedProduct, 3);

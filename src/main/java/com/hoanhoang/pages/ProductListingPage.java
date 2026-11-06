@@ -1,22 +1,31 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import com.hoanhoang.data.model.Product;
 import com.hoanhoang.data.util.PriceUtils;
 import com.hoanhoang.pages.support.ApplicationWait;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 public abstract class ProductListingPage extends BasePage {
-    protected abstract By addableProductCards();
+    private static final By PRODUCT_TITLE = By.cssSelector("h2.product-title");
+    private static final By SALE_PRICE = By.cssSelector(".price ins .amount");
+    private static final By CURRENT_PRICE =
+            By.xpath(
+                    ".//*[contains(@class,'price')]//*[contains(@class,'amount')][not(ancestor::del)]");
+    private static final By ADD_TO_CART_BUTTON =
+            By.cssSelector(".product-details a.add_to_cart_button");
+    private static final String PRODUCT_CART_BUTTON_SELECTOR =
+            ".product-details a.add_to_cart_button[data-product_id='%s']";
 
     private final long seed = Long.getLong("random.seed", System.nanoTime());
     private final Random random = new Random(seed);
+
+    protected abstract By addableProductCards();
 
     @Step("Add a random product to cart")
     public Product addRandomProductToCart() {
@@ -24,11 +33,11 @@ public abstract class ProductListingPage extends BasePage {
     }
 
     protected Product addRandomProductExcluding(Set<String> names) {
-        List<WebElement> cards = cards();
+        Elements cards = cards();
         // Only the title is needed to exclude already chosen products; skip it when nothing is
         // excluded.
         if (!names.isEmpty()) {
-            cards = cards.stream().filter(card -> !names.contains(title(card))).toList();
+            cards = cards.filter(card -> !names.contains(title(card)));
         }
         if (cards.isEmpty()) {
             throw new IllegalStateException("Not enough distinct addable products");
@@ -45,60 +54,61 @@ public abstract class ProductListingPage extends BasePage {
         cards();
     }
 
-    protected List<WebElement> cards() {
-        return UiWait.until(
-                "Visible addable products",
-                d -> {
-                    List<WebElement> found = UiWait.visibleElements(addableProductCards());
-                    return found.isEmpty() ? null : found;
-                });
+    protected Elements cards() {
+        Elements cards = $$(addableProductCards()).visible();
+        return cards.waitUntilNotEmpty();
     }
 
-    private static String title(WebElement card) {
-        return card.findElement(By.cssSelector("h2.product-title")).getText().trim();
+    private static String title(Element card) {
+        return card.find(PRODUCT_TITLE).getText();
     }
 
-    protected Product readProduct(WebElement card) {
+    protected Product readProduct(Element card) {
         String name = title(card);
-        List<WebElement> prices = card.findElements(By.cssSelector(".price ins .amount"));
+        Elements prices = card.findAll(SALE_PRICE);
         if (prices.isEmpty()) {
-            prices =
-                    card.findElements(
-                            By.xpath(
-                                    ".//*[contains(@class,'price')]//*[contains(@class,'amount')][not(ancestor::del)]"));
+            prices = card.findAll(CURRENT_PRICE);
         }
-        WebElement amount =
-                prices.stream()
-                        .filter(WebElement::isDisplayed)
-                        .findFirst()
-                        .orElseThrow(
-                                () -> new IllegalStateException("No current price for " + name));
+        Elements visiblePrices = prices.visible();
+        if (visiblePrices.isEmpty()) {
+            throw new IllegalStateException("No current price for " + name);
+        }
+        Element amount = visiblePrices.first();
         return new Product(name, PriceUtils.parse(amount.getText()));
     }
 
-    private Product add(WebElement card) {
-        Product product = readProduct(card);
-        WebElement button = card.findElement(By.cssSelector("a.add_to_cart_button"));
-        String productId = button.getAttribute("data-product_id");
+    private Product add(Element card) {
+        ProductSelection selection =
+                card.waitUntil(
+                        "Read selected product",
+                        snapshot ->
+                                new ProductSelection(
+                                        readProduct(snapshot),
+                                        snapshot.find(ADD_TO_CART_BUTTON)
+                                                .getDomAttribute("data-product_id")));
+        Product product = selection.product();
+        String productId = selection.id();
         if (productId == null || !productId.matches("\\d+")) {
             throw new IllegalStateException("Missing stable product ID for " + product.name());
         }
-        By stableButton =
-                By.cssSelector("a.add_to_cart_button[data-product_id='" + productId + "']");
         Allure.addAttachment("Selected product (random seed " + seed + ")", product.toString());
-        UiWait.click(stableButton);
-        UiWait.until(
+        Element button = addToCartButton(productId);
+        button.click();
+        button.waitUntil(
                 "Add-to-cart completed for " + product.name(),
-                d ->
-                        d.findElements(stableButton).stream()
-                                .anyMatch(
-                                        e -> {
-                                            String classes = e.getAttribute("class");
-                                            return classes != null
-                                                    && classes.contains("added")
-                                                    && !classes.contains("loading");
-                                        }));
+                snapshot -> {
+                    String classes = snapshot.getDomAttribute("class");
+                    return classes != null
+                            && classes.contains("added")
+                            && !classes.contains("loading");
+                });
         ApplicationWait.idle();
         return product;
     }
+
+    private Element addToCartButton(String productId) {
+        return $(By.cssSelector(PRODUCT_CART_BUTTON_SELECTOR.formatted(productId)));
+    }
+
+    private record ProductSelection(Product product, String id) {}
 }

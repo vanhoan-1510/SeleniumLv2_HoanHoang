@@ -1,42 +1,43 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+import static com.hoanhoang.core.element.ElementFactory.$$;
+
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 import org.openqa.selenium.By;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebElement;
 
 /**
  * Generic row-based table: reads rows as objects, finds a row by its unique key (e.g. product name,
  * order number) and performs an action inside that row.
  */
 public class TableComponent<T> {
-    private final By table;
-    private final By rows;
-    private final Function<WebElement, T> rowMapper;
-    private final Function<WebElement, String> rowKey;
+    private final Element table;
+    private final Elements rows;
+    private final String description;
+    private final Function<Element, T> rowMapper;
+    private final Function<Element, String> rowKey;
 
     public TableComponent(
-            By table,
-            By rows,
-            Function<WebElement, T> rowMapper,
-            Function<WebElement, String> rowKey) {
-        this.table = table;
-        this.rows = rows;
+            By table, By rows, Function<Element, T> rowMapper, Function<Element, String> rowKey) {
+        this.table = $(table);
+        this.rows = $$(rows).visible();
+        this.description = rows.toString();
         this.rowMapper = rowMapper;
         this.rowKey = rowKey;
     }
 
     public boolean isVisible() {
-        return UiWait.isVisible(table);
+        return table.isVisible();
     }
 
     public int size() {
-        return UiWait.visibleElements(rows).size();
+        return rows.size();
     }
 
     /**
@@ -44,7 +45,8 @@ public class TableComponent<T> {
      */
     public List<T> getRows() {
         return readRows(
-                "Read table rows " + rows, visible -> visible.stream().map(rowMapper).toList());
+                "Read table rows " + description,
+                visible -> visible.stream().map(rowMapper).toList());
     }
 
     public Optional<T> find(String key) {
@@ -58,20 +60,18 @@ public class TableComponent<T> {
     }
 
     /**
-     * Re-reads while a row is half re-rendered by AJAX (e.g. an empty quantity or price cell makes
-     * the mapper throw). On timeout the last read error is attached to the TimeoutException.
+     * Re-reads explicitly incomplete rows during AJAX. Unexpected mapper/browser failures propagate
+     * immediately; stale or missing DOM nodes are retried by the collection wrapper.
      */
-    private <R> R readRows(String description, Function<List<WebElement>, R> read) {
-        RuntimeException[] lastError = {null};
+    private <R> R readRows(String description, Function<List<Element>, R> read) {
+        RowNotReadyException[] lastError = {null};
         try {
-            return UiWait.until(
+            return rows.waitUntil(
                     description,
-                    d -> {
+                    visible -> {
                         try {
-                            return read.apply(UiWait.visibleElements(rows));
-                        } catch (StaleElementReferenceException e) {
-                            throw e; // already retried by UiWait
-                        } catch (RuntimeException e) {
+                            return read.apply(visible);
+                        } catch (RowNotReadyException e) {
                             lastError[0] = e;
                             return null;
                         }
@@ -89,24 +89,30 @@ public class TableComponent<T> {
                 .orElseThrow(() -> new NoSuchElementException("Table row not found: " + key));
     }
 
-    /** Waits until the row with the given key is visible and returns it. */
-    public WebElement row(String key) {
-        return UiWait.until(
-                "Table row: " + key,
-                d ->
-                        UiWait.visibleElements(rows).stream()
-                                .filter(r -> key.equals(rowKey.apply(r)))
-                                .findFirst()
-                                .orElse(null));
+    /** Live row query; child reads and actions resolve the key again when needed. */
+    public Element row(String key) {
+        return rows.filter(row -> key.equals(rowKey.apply(row))).first();
     }
 
-    public WebElement firstRow() {
-        return UiWait.until(
-                "First table row " + rows,
-                d -> UiWait.visibleElements(rows).stream().findFirst().orElse(null));
+    public Element firstRow() {
+        return rows.first();
     }
 
     public void clickInRow(String key, By action) {
-        row(key).findElement(action).click();
+        row(key).find(action).click();
+    }
+
+    static String requiredCellValue(String value, String column) {
+        if (value == null || value.isBlank()) {
+            throw new RowNotReadyException("Empty table cell: " + column);
+        }
+        return value;
+    }
+
+    /** A mapper may request another read while the DOM contains an incomplete row. */
+    public static final class RowNotReadyException extends RuntimeException {
+        public RowNotReadyException(String message) {
+            super(message);
+        }
     }
 }

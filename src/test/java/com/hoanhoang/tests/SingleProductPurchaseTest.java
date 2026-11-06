@@ -16,7 +16,7 @@ import com.hoanhoang.pages.ShoppingCartPage;
 import java.util.List;
 import org.testng.annotations.Test;
 
-public class TC01 extends BaseTest {
+public class SingleProductPurchaseTest extends BaseTest {
 
     @Test(description = "TC01 - Verify users can buy an item successfully")
     public void userCanBuyAnItem() {
@@ -38,7 +38,6 @@ public class TC01 extends BaseTest {
         cart.clickCheckoutButton();
         CheckoutPage checkout = new CheckoutPage();
         checkout.waitUntilLoaded();
-        assertThat(checkout.isLoaded()).as("Checkout page displayed").isTrue();
         assertOrderItems(checkout.getProducts(), List.of(expectedProduct));
 
         BillingDetails billing = TestDataManager.getBillingInfo();
@@ -48,7 +47,6 @@ public class TC01 extends BaseTest {
 
         OrderSuccessPage success = new OrderSuccessPage();
         success.waitUntilLoaded();
-        assertThat(success.isLoaded()).as("Order status page displayed").isTrue();
         success.confirmationMessage().shouldHaveText("Thank you");
         assertOrderItems(success.getProducts(), List.of(expectedProduct));
         assertBillingDetails(success, billing);

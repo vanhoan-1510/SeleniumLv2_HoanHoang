@@ -1,36 +1,41 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+import static com.hoanhoang.core.element.ElementFactory.$$;
+import static com.hoanhoang.pages.components.TableComponent.requiredCellValue;
+
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import com.hoanhoang.data.model.CartItem;
 import com.hoanhoang.data.util.PriceUtils;
 import com.hoanhoang.pages.support.ApplicationWait;
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebElement;
 
 public class CartTableComponent {
+    private static final By TABLE = By.cssSelector("table.shop_table.cart");
     private static final By ROWS = By.cssSelector("table.shop_table.cart tbody tr.cart_item");
     private static final By NAME = By.cssSelector(".product-title");
     private static final By QUANTITY = By.cssSelector(".product-quantity input.qty");
     private static final By REMOVE = By.cssSelector("a.remove-item");
+    private static final By UNIT_PRICE = By.cssSelector(".product-price .amount");
+    private static final By SUBTOTAL = By.cssSelector(".product-subtotal .amount");
+    private static final By INCREASE_QUANTITY = By.cssSelector(".plus");
+    private static final By DECREASE_QUANTITY = By.cssSelector(".minus");
+    private final Element updateCartButton = $(By.cssSelector("button[name='update_cart']"));
+    private final Elements rows = $$(ROWS).visible();
     private final TableComponent<CartItem> table =
             new TableComponent<>(
-                    By.cssSelector("table.shop_table.cart"),
-                    ROWS,
-                    CartTableComponent::toItem,
-                    row -> row.findElement(NAME).getText().trim());
+                    TABLE, ROWS, CartTableComponent::toItem, row -> row.find(NAME).getText());
 
-    private static CartItem toItem(WebElement row) {
+    private static CartItem toItem(Element row) {
         return new CartItem(
-                row.findElement(NAME).getText().trim(),
-                PriceUtils.parse(
-                        row.findElement(By.cssSelector(".product-price .amount")).getText()),
-                Integer.parseInt(row.findElement(QUANTITY).getDomProperty("value")),
-                PriceUtils.parse(
-                        row.findElement(By.cssSelector(".product-subtotal .amount")).getText()));
+                row.find(NAME).getText(),
+                PriceUtils.parse(requiredCellValue(row.find(UNIT_PRICE).getText(), "unit price")),
+                Integer.parseInt(
+                        requiredCellValue(row.find(QUANTITY).getDomProperty("value"), "quantity")),
+                PriceUtils.parse(requiredCellValue(row.find(SUBTOTAL).getText(), "subtotal")));
     }
 
     public boolean isVisible() {
@@ -49,18 +54,13 @@ public class CartTableComponent {
         validateQuantity(quantity);
         ApplicationWait.idle();
         if (getItem(name).quantity() == quantity) {
-            waitForQuantity(name, quantity);
-            ApplicationWait.idle();
             return;
         }
-        WebElement input = table.row(name).findElement(QUANTITY);
-        input.sendKeys(Keys.chord(Keys.CONTROL, "a"));
-        input.sendKeys(String.valueOf(quantity));
-        // Blur triggers the theme's debounced change handler (1500ms). A manual UPDATE CART
-        // click here would submit once now and again when that timer fires.
-        input.sendKeys(Keys.TAB);
-        waitForQuantity(name, quantity);
-        ApplicationWait.idle();
+        Element row = table.row(name);
+        BooleanSupplier rowReplaced = row.watchForReplacement();
+        row.find(QUANTITY).replaceTextAndBlur(String.valueOf(quantity));
+        updateCartButton.click();
+        waitForUpdate(name, rowReplaced);
     }
 
     public void changeQuantity(String name, int delta) {
@@ -70,88 +70,30 @@ public class CartTableComponent {
         ApplicationWait.idle();
         int expectedQuantity = getItem(name).quantity() + delta;
         validateQuantity(expectedQuantity);
-        table.clickInRow(name, By.cssSelector(delta > 0 ? ".plus" : ".minus"));
+        BooleanSupplier rowReplaced = table.row(name).watchForReplacement();
+        table.clickInRow(name, delta > 0 ? INCREASE_QUANTITY : DECREASE_QUANTITY);
         // The theme submits the cart by itself 1.5s after +/- (debounced AJAX). Do not click
-        // UPDATE CART here: a second update overlaps it and the stale response wins. The subtotal
-        // only changes when the server has answered, so waiting for it means the update is done.
-        waitForQuantity(name, expectedQuantity);
+        // UPDATE CART here: a second update can overlap it. Wait for the response to replace the
+        // original row; quantity and subtotal are verified by the test after the update finishes.
+        waitForUpdate(name, rowReplaced);
+    }
+
+    private void waitForUpdate(String name, BooleanSupplier rowReplaced) {
+        rows.waitUntil("Cart response received for " + name, visible -> rowReplaced.getAsBoolean());
         ApplicationWait.idle();
-    }
-
-    private void waitForQuantity(String name, int expectedQuantity) {
-        CartItem[] lastItem = {null};
-        IllegalArgumentException[] lastReadError = {null};
-        try {
-            UiWait.until(
-                    "Cart quantity and totals settled for " + name,
-                    d -> {
-                        WebElement row = findVisibleRow(name);
-                        if (row == null) {
-                            lastItem[0] = null;
-                            return false;
-                        }
-                        try {
-                            lastItem[0] = toItem(row);
-                        } catch (IllegalArgumentException e) {
-                            // Quantity/price cells can be blank while the row is being replaced.
-                            lastReadError[0] = e;
-                            return false;
-                        }
-                        return quantityMatchesServerState(row, lastItem[0], expectedQuantity);
-                    });
-        } catch (TimeoutException e) {
-            if (lastReadError[0] != null) {
-                e.addSuppressed(lastReadError[0]);
-            }
-            throw new TimeoutException(
-                    "Expected cart quantity "
-                            + expectedQuantity
-                            + " for "
-                            + name
-                            + "; last row: "
-                            + lastItem[0],
-                    e);
-        }
-    }
-
-    private static WebElement findVisibleRow(String name) {
-        return UiWait.visibleElements(ROWS).stream()
-                .filter(row -> name.equals(row.findElement(NAME).getText().trim()))
-                .findFirst()
-                .orElse(null);
-    }
-
-    private static boolean quantityMatchesServerState(
-            WebElement row, CartItem item, int expectedQuantity) {
-        return String.valueOf(expectedQuantity)
-                        .equals(row.findElement(QUANTITY).getDomAttribute("value"))
-                && item.quantity() == expectedQuantity
-                && item.subtotal()
-                                .compareTo(
-                                        item.unitPrice()
-                                                .multiply(BigDecimal.valueOf(expectedQuantity)))
-                        == 0;
     }
 
     private static void validateQuantity(int quantity) {
         if (quantity < 1) {
-            throw new IllegalArgumentException(
-                    "Quantity must be at least 1; use removeProduct to remove an item");
+            throw new IllegalArgumentException("Quantity must be at least 1");
         }
-    }
-
-    public void removeProduct(String name) {
-        int count = table.size();
-        table.clickInRow(name, REMOVE);
-        UiWait.until("Cart row removed: " + name, d -> d.findElements(ROWS).size() < count);
-        ApplicationWait.idle();
     }
 
     public void removeAll() {
         while (!getItems().isEmpty()) {
             int count = table.size();
-            table.firstRow().findElement(REMOVE).click();
-            UiWait.until("Cart row removed", d -> d.findElements(ROWS).size() < count);
+            table.firstRow().find(REMOVE).click();
+            rows.waitUntilSizeLessThan(count);
             ApplicationWait.idle();
         }
     }

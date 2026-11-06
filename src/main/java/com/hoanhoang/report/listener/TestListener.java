@@ -61,7 +61,7 @@ public class TestListener implements ITestListener, IConfigurationListener, IInv
 
     /**
      * Class.method plus data-provider parameters, e.g.
-     * TC03.userCanBuyAnItemWithEachPaymentMethod[COD].
+     * PaymentMethodPurchaseTest.userCanBuyAnItemWithEachPaymentMethod[COD].
      */
     private static String name(ITestResult result) {
         Object[] params = result.getParameters();

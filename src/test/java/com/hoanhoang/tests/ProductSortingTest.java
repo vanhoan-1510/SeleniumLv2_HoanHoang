@@ -8,7 +8,7 @@ import com.hoanhoang.pages.ShopPage;
 import java.util.Comparator;
 import org.testng.annotations.Test;
 
-public class TC04 extends BaseTest {
+public class ProductSortingTest extends BaseTest {
 
     @Test(description = "TC04 - Verify users can sort items by price")
     public void userCanSortItemsByPrice() {

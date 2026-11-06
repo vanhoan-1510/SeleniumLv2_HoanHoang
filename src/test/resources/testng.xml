@@ -6,16 +6,16 @@
 
     <test name="Smoke Tests">
         <classes>
-            <class name="com.hoanhoang.tests.TC01"/>
-            <class name="com.hoanhoang.tests.TC02"/>
-            <class name="com.hoanhoang.tests.TC03"/>
-            <class name="com.hoanhoang.tests.TC04"/>
-            <class name="com.hoanhoang.tests.TC05"/>
-            <class name="com.hoanhoang.tests.TC06"/>
-            <class name="com.hoanhoang.tests.TC07"/>
-            <class name="com.hoanhoang.tests.TC08"/>
-            <class name="com.hoanhoang.tests.TC09"/>
-            <class name="com.hoanhoang.tests.TC10"/>
+            <class name="com.hoanhoang.tests.SingleProductPurchaseTest"/>
+            <class name="com.hoanhoang.tests.MultipleProductPurchaseTest"/>
+            <class name="com.hoanhoang.tests.PaymentMethodPurchaseTest"/>
+            <class name="com.hoanhoang.tests.ProductSortingTest"/>
+            <class name="com.hoanhoang.tests.OrderHistoryTest"/>
+            <class name="com.hoanhoang.tests.GuestCheckoutTest"/>
+            <class name="com.hoanhoang.tests.CheckoutValidationTest"/>
+            <class name="com.hoanhoang.tests.CartClearTest"/>
+            <class name="com.hoanhoang.tests.CartQuantityTest"/>
+            <class name="com.hoanhoang.tests.ProductReviewTest"/>
         </classes>
     </test>
 </suite>

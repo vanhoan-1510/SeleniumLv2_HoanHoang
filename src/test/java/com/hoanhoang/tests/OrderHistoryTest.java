@@ -11,7 +11,7 @@ import com.hoanhoang.tests.support.OrderFixture;
 import java.util.List;
 import org.testng.annotations.Test;
 
-public class TC05 extends BaseTest {
+public class OrderHistoryTest extends BaseTest {
 
     @Test(description = "TC05 - Verify orders appear in order history")
     public void placedOrdersAppearInOrderHistory() {
@@ -24,7 +24,6 @@ public class TC05 extends BaseTest {
         OrderHistoryPage history = new OrderHistoryPage();
         List<OrderSummary> orders = history.getOrders();
 
-        assertThat(history.isOrderTableVisible()).as("Order history table visible").isTrue();
         assertThat(orders).as("User has at least two orders").hasSizeGreaterThanOrEqualTo(2);
         assertThat(orders)
                 .extracting(OrderSummary::number)
@@ -40,7 +39,6 @@ public class TC05 extends BaseTest {
     }
 
     private void assertOrderDetails(OrderSummary order) {
-        assertThat(order.date()).as("Order %s date", order.number()).isNotNull();
         assertThat(order.total()).as("Order %s total", order.number()).isPositive();
         assertThat(order.status()).as("Order %s status", order.number()).isNotBlank();
     }

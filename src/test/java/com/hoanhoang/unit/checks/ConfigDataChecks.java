@@ -13,13 +13,29 @@ import com.hoanhoang.data.builder.BillingBuilder;
 import com.hoanhoang.data.model.BillingDetails;
 import com.hoanhoang.data.model.UserDto;
 import com.hoanhoang.data.util.PriceUtils;
+import com.hoanhoang.tests.CartQuantityTest;
+import com.hoanhoang.tests.support.SuiteConfiguration;
+import com.hoanhoang.unit.FrameworkTest;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+import org.testng.xml.XmlClass;
+import org.testng.xml.XmlSuite;
+import org.testng.xml.XmlTest;
 
 public class ConfigDataChecks {
+    private final ThreadLocal<List<UserDto>> accounts = ThreadLocal.withInitial(ArrayList::new);
+
+    @AfterMethod(alwaysRun = true)
+    public void releaseAccounts() {
+        List<UserDto> leased = accounts.get();
+        accounts.remove();
+        leased.forEach(AccountPool::releaseAccount);
+    }
+
     @Test
     public void finalConfigurationValidatesOverridesWithoutMutatingTheOriginal() {
         var original = JsonConfigLoader.loadFromJson("sample");
@@ -112,21 +128,66 @@ public class ConfigDataChecks {
 
     @Test
     public void accountPoolReturnsLeasesWithoutDuplicates() {
-        List<UserDto> leased = new ArrayList<>();
+        List<UserDto> leased = accounts.get();
         int count = AccountPool.getAccountCount();
-        try {
-            for (int i = 0; i < count; i++) {
-                var account = AccountPool.waitForAvailableAccount(0);
-                assertThat(account).as("Account lease %s", i).isNotNull();
-                leased.add(account);
-            }
-            assertThat(AccountPool.getAvailableAccount()).isNull();
-            assertThat(leased.stream().map(UserDto::getUsername).distinct().count())
-                    .isEqualTo((long) count);
-        } finally {
-            leased.forEach(AccountPool::releaseAccount);
+        for (int i = 0; i < count; i++) {
+            var account = AccountPool.waitForAvailableAccount(0);
+            assertThat(account).as("Account lease %s", i).isNotNull();
+            leased.add(account);
         }
+        assertThat(AccountPool.getAvailableAccount()).isNull();
+        assertThat(leased.stream().map(UserDto::getUsername).distinct().count())
+                .isEqualTo((long) count);
+        releaseAccounts();
         AccountPool.releaseAccount(leased.get(0));
         assertThat(AccountPool.getAvailableAccountCount()).isEqualTo(count);
+    }
+
+    @Test
+    public void uiConcurrencyCannotExceedTheAccountPool() {
+        int accounts = AccountPool.getAccountCount();
+        XmlSuite suite = new XmlSuite();
+        suite.setName("UI concurrency regression");
+        suite.setThreadCount(accounts + 2);
+        suite.setDataProviderThreadCount(accounts + 3);
+        XmlTest test = new XmlTest(suite);
+        test.setThreadCount(accounts + 4);
+        test.setXmlClasses(List.of(new XmlClass(CartQuantityTest.class)));
+
+        new SuiteConfiguration().alter(List.of(suite));
+
+        assertThat(suite.getThreadCount()).isEqualTo(accounts);
+        assertThat(suite.getDataProviderThreadCount()).isEqualTo(accounts);
+        assertThat(test.getThreadCount()).isEqualTo(accounts);
+    }
+
+    @Test
+    public void uiConcurrencyPreservesAnExplicitSerialRun() {
+        XmlSuite suite = new XmlSuite();
+        suite.setThreadCount(1);
+        suite.setDataProviderThreadCount(1);
+        XmlTest test = new XmlTest(suite);
+        test.setXmlClasses(List.of(new XmlClass(CartQuantityTest.class)));
+
+        new SuiteConfiguration().alter(List.of(suite));
+
+        assertThat(suite.getThreadCount()).isEqualTo(1);
+        assertThat(suite.getDataProviderThreadCount()).isEqualTo(1);
+        assertThat(test.getThreadCount()).isEqualTo(1);
+    }
+
+    @Test
+    public void browserFreeSuitesKeepTheirRequestedConcurrency() {
+        int requested = AccountPool.getAccountCount() + 2;
+        XmlSuite suite = new XmlSuite();
+        suite.setThreadCount(requested);
+        suite.setDataProviderThreadCount(requested);
+        XmlTest test = new XmlTest(suite);
+        test.setXmlClasses(List.of(new XmlClass(FrameworkTest.class)));
+
+        new SuiteConfiguration().alter(List.of(suite));
+
+        assertThat(suite.getThreadCount()).isEqualTo(requested);
+        assertThat(suite.getDataProviderThreadCount()).isEqualTo(requested);
     }
 }

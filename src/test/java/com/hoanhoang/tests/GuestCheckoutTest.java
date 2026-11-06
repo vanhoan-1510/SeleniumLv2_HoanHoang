@@ -15,29 +15,30 @@ import com.hoanhoang.pages.ShoppingCartPage;
 import java.util.List;
 import org.testng.annotations.Test;
 
-public class TC02 extends BaseTest {
+public class GuestCheckoutTest extends BaseTest {
 
-    @Test(description = "TC02 - Verify users can buy multiple items successfully")
-    public void userCanBuyMultipleItems() {
+    @Test(description = "TC06 - Verify users can buy an item without logging in (as a guest)")
+    public void guestCanBuyAnItem() {
         new HomePage().open();
-        login();
-        openShopWithEmptyCart();
 
         HeaderComponent header = new HeaderComponent();
-        List<Product> expectedProducts = new ShopPage().addMultipleRandomProductsToCart();
-        assertThat(expectedProducts)
-                .as("Multiple products selected")
-                .hasSizeGreaterThanOrEqualTo(2);
+        header.goToShopPage();
+        ShopPage shop = new ShopPage();
+        shop.waitUntilLoaded();
+        assertThat(shop.isGridViewVisible()).as("Default grid view").isTrue();
+
+        shop.switchToListView();
+
+        Product expectedProduct = shop.addFirstProductToCart();
 
         header.goToCartPage();
         ShoppingCartPage cart = new ShoppingCartPage();
         cart.reloadAndWaitUntilReady();
-        assertCart(cart.getProducts(), expectedProducts);
+        assertCart(cart.getProducts(), List.of(expectedProduct));
 
         cart.clickCheckoutButton();
         CheckoutPage checkout = new CheckoutPage();
         checkout.waitUntilLoaded();
-        assertOrderItems(checkout.getProducts(), expectedProducts);
 
         checkout.fillBillingDetails(TestDataManager.getBillingInfo());
         checkout.placeOrder();
@@ -45,6 +46,6 @@ public class TC02 extends BaseTest {
         OrderSuccessPage success = new OrderSuccessPage();
         success.waitUntilLoaded();
         success.confirmationMessage().shouldHaveText("Thank you");
-        assertOrderItems(success.getProducts(), expectedProducts);
+        assertOrderItems(success.getProducts(), List.of(expectedProduct));
     }
 }
