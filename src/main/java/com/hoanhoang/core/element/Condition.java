@@ -5,10 +5,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import org.openqa.selenium.WebElement;
 
-/**
- * What an element should have: text, exact text, value or DOM property. Used by
- * Element.shouldHave(...).
- */
+/** What an element should have: text, exact text or value. Used by Element.shouldHave(...). */
 public final class Condition {
     private final String description;
     private final Function<WebElement, String> reader;
@@ -44,12 +41,6 @@ public final class Condition {
     /** Input value (DOM property "value") equals the expected value. */
     public static Condition value(String expected) {
         return new Condition("value", e -> e.getDomProperty("value"), String::equals, expected);
-    }
-
-    /** DOM property (e.g. "checked", "className") equals the expected value. */
-    public static Condition prop(String name, String expected) {
-        return new Condition(
-                "property '" + name + "'", e -> e.getDomProperty(name), String::equals, expected);
     }
 
     String read(WebElement element) {

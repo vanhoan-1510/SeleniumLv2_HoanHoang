@@ -1,30 +1,69 @@
 package com.hoanhoang.pages.components;
 
-import com.hoanhoang.core.util.UiWait;
+import static com.hoanhoang.core.element.ElementFactory.$;
+
+import com.hoanhoang.core.element.Element;
 import com.hoanhoang.data.model.BillingDetails;
 import com.hoanhoang.pages.support.ApplicationWait;
+import java.util.Arrays;
+import java.util.Optional;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
 
 public class BillingFormComponent {
+    public enum Field {
+        FIRST_NAME("billing_first_name"),
+        LAST_NAME("billing_last_name"),
+        ADDRESS("billing_address_1"),
+        CITY("billing_city"),
+        POSTCODE("billing_postcode"),
+        PHONE("billing_phone"),
+        EMAIL("billing_email");
+
+        private final String inputId;
+
+        Field(String inputId) {
+            this.inputId = inputId;
+        }
+
+        public static Optional<Field> fromInputId(String inputId) {
+            return Arrays.stream(values())
+                    .filter(field -> field.inputId.equals(inputId))
+                    .findFirst();
+        }
+    }
+
+    private final Element firstNameInput = $(By.id(Field.FIRST_NAME.inputId));
+    private final Element lastNameInput = $(By.id(Field.LAST_NAME.inputId));
+    private final Element addressInput = $(By.id(Field.ADDRESS.inputId));
+    private final Element cityInput = $(By.id(Field.CITY.inputId));
+    private final Element postcodeInput = $(By.id(Field.POSTCODE.inputId));
+    private final Element postcodeField = $(By.id(Field.POSTCODE.inputId + "_field"));
+    private final Element phoneInput = $(By.id(Field.PHONE.inputId));
+    private final Element emailInput = $(By.id(Field.EMAIL.inputId));
+
     public void fill(BillingDetails billing) {
-        type("billing_first_name", billing.firstName());
-        type("billing_last_name", billing.lastName());
-        type("billing_address_1", billing.address());
-        type("billing_city", billing.city());
-        type("billing_postcode", billing.postcode());
-        type("billing_phone", billing.phone());
-        if (UiWait.isVisible(By.id("billing_email"))) {
-            type("billing_email", billing.email());
+        type(firstNameInput, billing.firstName());
+        type(lastNameInput, billing.lastName());
+        type(addressInput, billing.address());
+        type(cityInput, billing.city());
+        type(postcodeInput, billing.postcode());
+        type(phoneInput, billing.phone());
+        if (emailInput.isVisible()) {
+            type(emailInput, billing.email());
         }
         ApplicationWait.idle();
     }
 
-    private void type(String id, String value) {
-        WebElement input = UiWait.clickable(By.id(id));
-        input.clear();
-        input.sendKeys(value);
-        input.sendKeys(Keys.TAB);
+    public boolean isPostcodeRequired() {
+        return postcodeField.readSnapshot(
+                field ->
+                        field.isVisible()
+                                && String.valueOf(field.getDomAttribute("class"))
+                                        .contains("validate-required"));
+    }
+
+    private void type(Element input, String value) {
+        input.type(value);
+        input.blur();
     }
 }

@@ -9,7 +9,7 @@ import com.hoanhoang.pages.ShoppingCartPage;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Explicit TC05 precondition. Uses UI because no seed API/DB is configured. */
+/** Explicit OrderHistoryTest precondition. Uses UI because no seed API/DB is configured. */
 public final class OrderFixture {
     private OrderFixture() {}
 

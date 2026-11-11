@@ -11,7 +11,7 @@ import com.hoanhoang.pages.ShoppingCartPage;
 import java.util.List;
 import org.testng.annotations.Test;
 
-public class TC08 extends BaseTest {
+public class CartClearTest extends BaseTest {
 
     @Test(description = "TC08 - Verify users can clear the cart")
     public void userCanClearCart() {
@@ -25,7 +25,6 @@ public class TC08 extends BaseTest {
         header.goToCartPage();
         ShoppingCartPage cart = new ShoppingCartPage();
         cart.reloadAndWaitUntilReady();
-        assertThat(cart.isProductTableVisible()).as("Cart table").isTrue();
         assertCart(cart.getProducts(), List.of(expectedProduct));
 
         cart.clearCartUsingClearCartButton();

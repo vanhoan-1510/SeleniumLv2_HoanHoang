@@ -10,20 +10,32 @@ import com.hoanhoang.core.driver.DriverManager;
 import com.hoanhoang.data.model.CartItem;
 import com.hoanhoang.data.model.OrderItem;
 import com.hoanhoang.data.model.Product;
+import com.hoanhoang.pages.CheckoutPage;
+import com.hoanhoang.pages.components.BillingFormComponent.Field;
 import com.hoanhoang.pages.components.CartTableComponent;
 import com.hoanhoang.tests.support.PurchaseAssertions;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 public class PurchaseChecks {
+    @AfterMethod(alwaysRun = true)
+    public void releaseDriver() {
+        DriverManager.quitDriver();
+    }
+
     @Test
     public void unsupportedQuantityInputsFailBeforeAccessingTheBrowser() {
         CartTableComponent cart = new CartTableComponent();
@@ -38,17 +50,14 @@ public class PurchaseChecks {
     }
 
     @Test
-    public void typingQuantityUsesOneThemeUpdateAndWaitsForServerState() {
+    public void typingQuantityClicksUpdateCartAndWaitsForTheResponse() {
         ConfigLoader.load("dev");
         QuantityUpdateFixture fixture = new QuantityUpdateFixture();
         DriverManager.setDriver(fixture.driver());
-        try {
-            new CartTableComponent().setQuantity("A", 4);
-            assertThat(fixture.serverQuantity.get()).isEqualTo(4);
-            assertThat(fixture.submissions.get()).isEqualTo(1);
-        } finally {
-            DriverManager.quitDriver();
-        }
+        new CartTableComponent().setQuantity("A", 4);
+        assertThat(fixture.serverQuantity.get()).isEqualTo(4);
+        assertThat(fixture.submissions.get()).isEqualTo(1);
+        assertThat(fixture.keyEvents).containsExactly(Keys.chord(Keys.CONTROL, "a"), "4");
     }
 
     @Test
@@ -72,24 +81,86 @@ public class PurchaseChecks {
                 List.of(new OrderItem("A", 2, new BigDecimal("20"))), List.of(product, product));
     }
 
+    @Test
+    public void checkoutReadsFieldMessagesAndHighlightsIndependently() {
+        WebElement firstNameError =
+                mockElement(
+                        (proxy, method, args) ->
+                                switch (method.getName()) {
+                                    case "isDisplayed" -> true;
+                                    case "getText" -> "First name is required";
+                                    case "getDomAttribute" -> "billing_first_name";
+                                    default -> null;
+                                });
+        WebElement generalError = mockElement("Checkout could not be completed");
+        AtomicReference<List<WebElement>> highlightedFields = new AtomicReference<>(List.of());
+        DriverManager.setDriver(
+                mockDriver(
+                        (proxy, method, args) ->
+                                method.getName().equals("findElements")
+                                        ? args[0].toString().contains(".woocommerce-error")
+                                                ? List.of(firstNameError, generalError)
+                                                : highlightedFields.get()
+                                        : null));
+        CheckoutPage checkout = new CheckoutPage();
+
+        assertThat(checkout.getFieldErrorMessages())
+                .containsOnlyKeys(Field.FIRST_NAME)
+                .containsEntry(Field.FIRST_NAME, "First name is required");
+        assertThat(checkout.getErrorMessages())
+                .containsExactly("First name is required", "Checkout could not be completed");
+        assertThat(checkout.getInvalidBillingFields()).isEmpty();
+
+        highlightedFields.set(
+                List.of(
+                        mockElement(
+                                (proxy, method, args) ->
+                                        switch (method.getName()) {
+                                            case "isDisplayed" -> true;
+                                            case "getDomAttribute" -> "billing_postcode_field";
+                                            default -> null;
+                                        })));
+        assertThat(checkout.getInvalidBillingFields()).containsExactly(Field.POSTCODE);
+        assertThat(checkout.getFieldErrorMessages()).doesNotContainKey(Field.POSTCODE);
+    }
+
     private static final class QuantityUpdateFixture {
         private final AtomicInteger clientQuantity = new AtomicInteger(1);
         private final AtomicInteger serverQuantity = new AtomicInteger(1);
         private final AtomicInteger submissions = new AtomicInteger();
         private final AtomicInteger polls = new AtomicInteger();
+        private final AtomicBoolean rowReplaced = new AtomicBoolean();
+        private final List<String> keyEvents = new ArrayList<>();
 
         private WebDriver driver() {
-            WebElement row = row(input(), subtotal());
+            WebElement input = input();
+            WebElement row = row(input, subtotal(), true);
+            WebElement updatedRow = row(input, subtotal(), false);
             return mockDriver(
                     (proxy, method, args) -> {
                         if (method.getName().equals("executeScript")) {
+                            if (args[0].toString().equals("arguments[0].blur();")) {
+                                assertThat(((Object[]) args[1])[0]).isSameAs(input);
+                                return null;
+                            }
                             return !args[0].toString().contains("critical error");
                         }
                         if (method.getName().equals("findElements")) {
                             if (args[0].toString().contains("update_cart")) {
-                                throw new AssertionError("Manual submit overlaps the theme update");
+                                return List.of(
+                                        mockElement(
+                                                (button, action, arguments) -> {
+                                                    if (action.getName().equals("click")) {
+                                                        submissions.incrementAndGet();
+                                                    }
+                                                    return action.getName().equals("isDisplayed")
+                                                                    || action.getName()
+                                                                            .equals("isEnabled")
+                                                            ? true
+                                                            : null;
+                                                }));
                             }
-                            return List.of(row);
+                            return List.of(rowReplaced.get() ? updatedRow : row);
                         }
                         return null;
                     },
@@ -100,6 +171,8 @@ public class PurchaseChecks {
             return mockElement(
                     (proxy, method, args) -> {
                         switch (method.getName()) {
+                            case "isDisplayed", "isEnabled":
+                                return true;
                             case "clear":
                                 throw new AssertionError("Clearing triggers an extra change");
                             case "sendKeys":
@@ -107,17 +180,12 @@ public class PurchaseChecks {
                                         Arrays.stream((CharSequence[]) args[0])
                                                 .map(Object::toString)
                                                 .collect(Collectors.joining());
+                                keyEvents.add(keys);
                                 if (keys.matches("[0-9]+")) {
                                     clientQuantity.set(Integer.parseInt(keys));
                                 }
-                                if (keys.equals(Keys.TAB.toString())) {
-                                    submissions.incrementAndGet();
-                                }
                                 return null;
                             case "getDomProperty":
-                                if (submissions.get() > 0 && polls.incrementAndGet() >= 2) {
-                                    serverQuantity.set(clientQuantity.get());
-                                }
                                 return String.valueOf(clientQuantity.get());
                             case "getDomAttribute":
                                 return String.valueOf(serverQuantity.get());
@@ -130,29 +198,40 @@ public class PurchaseChecks {
         private WebElement subtotal() {
             return mockElement(
                     (proxy, method, args) ->
-                            method.getName().equals("getText")
-                                    ? "$" + serverQuantity.get() * 10
-                                    : null);
+                            switch (method.getName()) {
+                                case "isDisplayed" -> true;
+                                case "getText" -> "$" + serverQuantity.get() * 10;
+                                default -> null;
+                            });
         }
 
-        private WebElement row(WebElement input, WebElement subtotal) {
+        private WebElement row(WebElement input, WebElement subtotal, boolean original) {
             return mockElement(
                     (proxy, method, args) -> {
+                        if (method.getName().equals("isEnabled")) {
+                            if (original && submissions.get() > 0 && polls.incrementAndGet() >= 2) {
+                                serverQuantity.set(clientQuantity.get());
+                                rowReplaced.set(true);
+                                throw new StaleElementReferenceException(
+                                        "Cart response replaced row");
+                            }
+                            return true;
+                        }
                         if (method.getName().equals("isDisplayed")) {
                             return true;
                         }
-                        if (method.getName().equals("findElement")) {
+                        if (method.getName().equals("findElements")) {
                             String locator = args[0].toString();
                             if (locator.contains("input.qty")) {
-                                return input;
+                                return List.of(input);
                             }
                             if (locator.contains("product-subtotal")) {
-                                return subtotal;
+                                return List.of(subtotal);
                             }
                             if (locator.contains("product-price")) {
-                                return mockElement("$10.00");
+                                return List.of(mockElement("$10.00"));
                             }
-                            return mockElement("A");
+                            return List.of(mockElement("A"));
                         }
                         return null;
                     });

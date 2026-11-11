@@ -1,10 +1,13 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.data.model.BillingDetails;
 import com.hoanhoang.data.model.OrderItem;
 import com.hoanhoang.pages.components.BillingFormComponent;
+import com.hoanhoang.pages.components.BillingFormComponent.Field;
 import com.hoanhoang.pages.components.OrderItemsComponent;
 import com.hoanhoang.pages.components.PaymentComponent;
 import com.hoanhoang.pages.support.ApplicationWait;
@@ -12,23 +15,43 @@ import io.qameta.allure.Step;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 public class CheckoutPage extends BasePage {
+    private static final By VALIDATION_ERRORS = By.cssSelector(".woocommerce-error li");
+
     private final BillingFormComponent billing = new BillingFormComponent();
     private final PaymentComponent payment = new PaymentComponent();
     private final OrderItemsComponent order =
             new OrderItemsComponent(By.cssSelector("#order_review tbody tr.cart_item"));
-    private final By errors = By.cssSelector(".woocommerce-error li");
+    private final Element validationError = $(VALIDATION_ERRORS);
+    private final Elements errorMessages = $$(VALIDATION_ERRORS);
+    private final Elements invalidBillingFields =
+            $$(
+                    By.cssSelector(
+                            ".woocommerce-billing-fields .form-row.woocommerce-invalid[id^='billing_']"));
+    private final Element confirmation = $(By.cssSelector(".woocommerce-thankyou-order-received"));
+    private final Element checkoutForm = $(By.cssSelector("form.checkout"));
+    private final Element placeOrderButton = $(By.id("place_order"));
 
+    @Step("Verify Checkout page is displayed")
     public void waitUntilLoaded() {
-        UiWait.visible(By.cssSelector("form.checkout"));
+        checkoutForm.waitUntil(
+                "Checkout form displayed",
+                form -> {
+                    ApplicationWait.failIfCriticalError();
+                    return form.isVisible();
+                });
         ApplicationWait.idle();
     }
 
     public boolean isLoaded() {
-        return UiWait.isVisible(By.cssSelector("form.checkout"));
+        return checkoutForm.isVisible();
+    }
+
+    public boolean isPostcodeRequired() {
+        return billing.isPostcodeRequired();
     }
 
     public List<OrderItem> getProducts() {
@@ -52,29 +75,43 @@ public class CheckoutPage extends BasePage {
     @Step("Click 'Place order'")
     public void placeOrder() {
         ApplicationWait.idle();
-        UiWait.click(By.id("place_order"));
-        UiWait.until(
+        placeOrderButton.click();
+        WebDriverWaitHelper.until(
                 "Checkout response: order confirmation or validation errors",
-                d ->
-                        d.getCurrentUrl().contains("order-received")
-                                || UiWait.isVisible(
-                                        By.cssSelector(".woocommerce-thankyou-order-received"))
-                                || UiWait.isVisible(errors));
+                d -> {
+                    ApplicationWait.failIfCriticalError();
+                    return d.getCurrentUrl().contains("order-received")
+                            || confirmation.isVisible()
+                            || validationError.isVisible();
+                });
         ApplicationWait.idle();
     }
 
     public List<String> getErrorMessages() {
-        return UiWait.visibleElements(errors).stream().map(e -> e.getText().trim()).toList();
+        return errorMessages.visible().map(Element::getText);
     }
 
-    public Map<String, String> getFieldErrors() {
-        Map<String, String> result = new LinkedHashMap<>();
-        for (WebElement error : UiWait.visibleElements(errors)) {
-            String field = error.getAttribute("data-id");
-            if (field != null && !field.isBlank()) {
-                result.put(field, error.getText().trim());
-            }
-        }
-        return Map.copyOf(result);
+    public List<Field> getInvalidBillingFields() {
+        return invalidBillingFields
+                .visible()
+                .map(field -> field.getDomAttribute("id").replaceFirst("_field$", ""))
+                .stream()
+                .map(Field::fromInputId)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    public Map<Field, String> getFieldErrorMessages() {
+        return errorMessages
+                .visible()
+                .readSnapshot(
+                        messages -> {
+                            Map<Field, String> result = new LinkedHashMap<>();
+                            for (Element error : messages) {
+                                Field.fromInputId(error.getDomAttribute("data-id"))
+                                        .ifPresent(field -> result.put(field, error.getText()));
+                            }
+                            return Map.copyOf(result);
+                        });
     }
 }

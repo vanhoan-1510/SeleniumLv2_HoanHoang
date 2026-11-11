@@ -1,29 +1,34 @@
 package com.hoanhoang.pages;
 
 import com.hoanhoang.core.element.Element;
-import com.hoanhoang.core.util.UiWait;
 import com.hoanhoang.data.model.OrderItem;
 import com.hoanhoang.pages.components.OrderItemsComponent;
 import com.hoanhoang.pages.support.ApplicationWait;
+import io.qameta.allure.Step;
 import java.util.List;
 import org.openqa.selenium.By;
 
 public class OrderSuccessPage extends BasePage {
-    private final By confirmation = By.cssSelector(".woocommerce-thankyou-order-received");
+    private static final By CONFIRMATION = By.cssSelector(".woocommerce-thankyou-order-received");
+    private final Element billingAddress =
+            $(
+                    By.cssSelector(
+                            ".woocommerce-column--billing-address address, .woocommerce-customer-details address"));
+    private final Element orderNumber =
+            $(By.cssSelector("li.woocommerce-order-overview__order strong"));
+    private final Element paymentMethod =
+            $(By.xpath("//tr[th[normalize-space()='Payment method:']]/td"));
     private final OrderItemsComponent items =
             new OrderItemsComponent(By.cssSelector("table.order_details tbody tr.order_item"));
 
+    @Step("Verify Order Status page is displayed")
     public void waitUntilLoaded() {
-        UiWait.visible(confirmation);
+        $(CONFIRMATION).waitUntilVisible();
         ApplicationWait.idle();
     }
 
-    public boolean isLoaded() {
-        return UiWait.isVisible(confirmation);
-    }
-
     public Element confirmationMessage() {
-        return $(confirmation);
+        return $(CONFIRMATION);
     }
 
     public List<OrderItem> getProducts() {
@@ -31,23 +36,14 @@ public class OrderSuccessPage extends BasePage {
     }
 
     public String getBillingAddress() {
-        return UiWait.visible(
-                        By.cssSelector(
-                                ".woocommerce-column--billing-address address, .woocommerce-customer-details address"))
-                .getText()
-                .trim();
+        return billingAddress.getText().trim();
     }
 
     public String getOrderNumber() {
-        return UiWait.visible(By.cssSelector("li.woocommerce-order-overview__order strong"))
-                .getText()
-                .replace("#", "")
-                .trim();
+        return orderNumber.getText().replace("#", "").trim();
     }
 
     public String getPaymentMethod() {
-        return UiWait.visible(By.xpath("//tr[th[normalize-space()='Payment method:']]/td"))
-                .getText()
-                .trim();
+        return paymentMethod.getText().trim();
     }
 }

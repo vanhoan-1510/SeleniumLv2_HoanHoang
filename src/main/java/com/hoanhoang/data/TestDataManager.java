@@ -27,7 +27,7 @@ public final class TestDataManager {
         getAccounts();
     }
 
-    /** Payment methods for data-driven TC03, read from testdata/payment-methods.json. */
+    /** Payment methods for PaymentMethodPurchaseTest, read from testdata/payment-methods.json. */
     public static List<PaymentMethod> getPaymentMethods() {
         JsonObject json =
                 JsonMapper.readResource(

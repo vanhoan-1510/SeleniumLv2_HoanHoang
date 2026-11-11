@@ -1,6 +1,7 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.element.Element;
+import com.hoanhoang.core.element.Elements;
 import com.hoanhoang.data.model.Product;
 import com.hoanhoang.data.util.PriceUtils;
 import com.hoanhoang.pages.support.ApplicationWait;
@@ -10,19 +11,36 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Select;
 
 public class ShopPage extends ProductListingPage {
     public static final String TITLE = "Products – TestArchitect Sample Website";
 
+    private static final By ADDABLE_PRODUCT_CARDS =
+            By.cssSelector(
+                    ".products-grid .content-product:has(a.add_to_cart_button), .products-list .content-product:has(a.add_to_cart_button)");
+    private final Element productCard = $(By.cssSelector(".content-product"));
+    private final Element sortDropdown = $(By.name("orderby"));
+    private final Element gridView = $(By.cssSelector(".products-grid"));
+    private final Element listView = $(By.cssSelector(".products-list"));
+    private final Element listViewButton = $(By.cssSelector(".view-switcher .switch-list"));
+    private final Element firstProductLink =
+            $(By.cssSelector(".content-product h2.product-title a"));
+
+    /** Current prices in display order, excluding old prices inside del. */
+    private final Elements currentPrices =
+            $$(
+                    By.cssSelector(
+                            ".products-grid .content-product .price > .amount,"
+                                    + " .products-grid .content-product .price ins .amount,"
+                                    + " .products-list .content-product .price > .amount,"
+                                    + " .products-list .content-product .price ins .amount"));
+
     @Override
     protected By addableProductCards() {
-        return By.cssSelector(
-                ".products-grid .content-product:has(a.add_to_cart_button), .products-list .content-product:has(a.add_to_cart_button)");
+        return ADDABLE_PRODUCT_CARDS;
     }
 
     public List<Product> addMultipleRandomProductsToCart() {
@@ -43,23 +61,12 @@ public class ShopPage extends ProductListingPage {
         return List.copyOf(result);
     }
 
-    /**
-     * Current price of every listed product, in display order. Regular price: ".price > .amount";
-     * sale price: ".price ins .amount" (the old price inside "del" is skipped).
-     */
-    private static final By CURRENT_PRICES =
-            By.cssSelector(
-                    ".products-grid .content-product .price > .amount,"
-                            + " .products-grid .content-product .price ins .amount,"
-                            + " .products-list .content-product .price > .amount,"
-                            + " .products-list .content-product .price ins .amount");
-
     public List<BigDecimal> getAllProductPrices() {
         List<BigDecimal> prices =
-                UiWait.until(
+                currentPrices.waitUntil(
                         "Catalog prices readable",
-                        d -> {
-                            List<String> texts = $$(CURRENT_PRICES).getTexts();
+                        amounts -> {
+                            List<String> texts = amounts.stream().map(Element::getText).toList();
                             return texts.isEmpty()
                                     ? null
                                     : texts.stream().map(PriceUtils::parse).toList();
@@ -81,33 +88,29 @@ public class ShopPage extends ProductListingPage {
     private void sort(String value) {
         // Keep a card from the current list: it goes stale once the sorted list replaces it,
         // whether the theme reloads the page or swaps the list via AJAX.
-        WebElement firstCardBefore = UiWait.visible(By.cssSelector(".content-product"));
-        new Select(UiWait.clickable(By.name("orderby"))).selectByValue(value);
-        UiWait.until(
+        BooleanSupplier listReplaced = productCard.watchForReplacement();
+        sortDropdown.selectByValue(value);
+        productCard.waitUntil(
                 "Product list replaced after sorting by " + value,
-                ExpectedConditions.stalenessOf(firstCardBefore));
+                snapshot -> listReplaced.getAsBoolean());
         ApplicationWait.idle();
         waitUntilLoaded();
     }
 
     public boolean isGridViewVisible() {
-        return UiWait.isVisible(By.cssSelector(".products-grid"));
-    }
-
-    public boolean isListViewVisible() {
-        return UiWait.isVisible(By.cssSelector(".products-list"));
+        return gridView.isVisible();
     }
 
     @Step("Switch product view to list")
     public void switchToListView() {
-        UiWait.click(By.cssSelector(".view-switcher .switch-list"));
-        UiWait.until("List view displayed", d -> isListViewVisible());
+        listViewButton.click();
+        Allure.step("Verify list view is displayed", () -> listView.waitUntilVisible());
         ApplicationWait.idle();
     }
 
     @Step("Open the first product detail page")
     public void clickFirstProduct() {
-        UiWait.click(By.cssSelector(".content-product h2.product-title a"));
+        firstProductLink.click();
         ApplicationWait.idle();
     }
 }

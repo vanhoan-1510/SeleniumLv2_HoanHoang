@@ -2,19 +2,19 @@ package com.hoanhoang.tests;
 
 import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.DriverManager;
-import com.hoanhoang.data.AccountPool;
 import com.hoanhoang.data.TestDataManager;
 import com.hoanhoang.data.model.UserDto;
 import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.LoginPage;
 import com.hoanhoang.pages.ShoppingCartPage;
+import com.hoanhoang.tests.support.TestSession;
 import io.qameta.allure.Step;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 
 public class BaseTest {
-    private final ThreadLocal<UserDto> accounts = new ThreadLocal<>();
+    private final TestSession session = new TestSession();
 
     @BeforeSuite(alwaysRun = true)
     public void loadConfiguration() {
@@ -33,32 +33,11 @@ public class BaseTest {
 
     @AfterMethod(alwaysRun = true)
     public void tearDown() {
-        try {
-            DriverManager.quitDriver();
-        } finally {
-            try {
-                var account = accounts.get();
-                if (account != null) {
-                    AccountPool.releaseAccount(account);
-                }
-            } finally {
-                accounts.remove();
-            }
-        }
+        session.close();
     }
 
     protected UserDto getAssignedAccount() {
-        var account = accounts.get();
-        if (account == null) {
-            int seconds = Integer.parseInt(System.getProperty("account.timeout", "60"));
-            account = AccountPool.waitForAvailableAccount(seconds);
-            if (account == null) {
-                throw new IllegalStateException(
-                        "No account available after " + seconds + " seconds");
-            }
-            accounts.set(account);
-        }
-        return account;
+        return session.account();
     }
 
     protected void login() {

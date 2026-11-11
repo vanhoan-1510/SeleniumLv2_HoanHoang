@@ -5,6 +5,7 @@ import com.hoanhoang.unit.checks.CredentialChecks;
 import com.hoanhoang.unit.checks.ElementDriverChecks;
 import com.hoanhoang.unit.checks.PurchaseChecks;
 import com.hoanhoang.unit.checks.RetryChecks;
+import com.hoanhoang.unit.checks.WrapperChecks;
 import org.testng.annotations.Factory;
 
 /** Stable Maven entry point for the browser-free checks, grouped by responsibility. */
@@ -16,7 +17,8 @@ public class FrameworkTest {
             new CredentialChecks(),
             new ElementDriverChecks(),
             new PurchaseChecks(),
-            new RetryChecks()
+            new RetryChecks(),
+            new WrapperChecks()
         };
     }
 }

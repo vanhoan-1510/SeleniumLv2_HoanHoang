@@ -17,7 +17,7 @@ import java.util.List;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class TC03 extends BaseTest {
+public class PaymentMethodPurchaseTest extends BaseTest {
 
     @Test(
             dataProvider = "paymentMethods",

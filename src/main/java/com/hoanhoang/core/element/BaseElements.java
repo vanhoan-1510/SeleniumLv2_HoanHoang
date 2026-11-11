@@ -1,6 +1,7 @@
 package com.hoanhoang.core.element;
 
 import com.hoanhoang.core.driver.DriverManager;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -13,16 +14,20 @@ import org.openqa.selenium.WebElement;
 public class BaseElements implements Elements {
     private final Function<WebDriver, List<WebElement>> resolver;
     private final String description;
+    private final boolean snapshot;
 
     public BaseElements(By locator) {
         Objects.requireNonNull(locator);
         this.resolver = d -> d.findElements(locator);
         this.description = locator.toString();
+        this.snapshot = false;
     }
 
-    private BaseElements(Function<WebDriver, List<WebElement>> resolver, String description) {
+    BaseElements(
+            Function<WebDriver, List<WebElement>> resolver, String description, boolean snapshot) {
         this.resolver = resolver;
         this.description = description;
+        this.snapshot = snapshot;
     }
 
     private List<WebElement> getElements() {
@@ -32,11 +37,6 @@ public class BaseElements implements Elements {
     @Override
     public int size() {
         return getElements().size();
-    }
-
-    @Override
-    public List<String> getTexts() {
-        return getElements().stream().map(WebElement::getText).toList();
     }
 
     @Override
@@ -50,9 +50,41 @@ public class BaseElements implements Elements {
         return new BaseElements(
                 d ->
                         resolver.apply(d).stream()
-                                .filter(e -> predicate.test(new PredicateElement(e)))
+                                .filter(e -> predicate.test(BaseElement.snapshot(e, description)))
                                 .toList(),
-                description + " filtered");
+                description + " filtered",
+                snapshot);
+    }
+
+    @Override
+    public <T> T readSnapshot(Function<List<Element>, T> reader) {
+        List<Element> elements =
+                getElements().stream()
+                        .map(element -> BaseElement.snapshot(element, description))
+                        .toList();
+        return reader.apply(elements);
+    }
+
+    @Override
+    public <T> T waitUntil(String expectation, Function<List<Element>, T> condition) {
+        if (snapshot) {
+            throw new IllegalStateException(
+                    "Snapshot callbacks support reads only: " + description);
+        }
+        Objects.requireNonNull(condition);
+        return WebDriverWaitHelper.until(expectation, driver -> readSnapshot(condition));
+    }
+
+    @Override
+    public Elements waitUntilNotEmpty() {
+        waitUntil(description + " not empty", elements -> !elements.isEmpty());
+        return this;
+    }
+
+    @Override
+    public Elements waitUntilSizeLessThan(int count) {
+        waitUntil(description + " size less than " + count, elements -> elements.size() < count);
+        return this;
     }
 
     /** Selects the current index, not the identity of its original DOM node. */
@@ -66,7 +98,8 @@ public class BaseElements implements Elements {
                     List<WebElement> elements = resolver.apply(d);
                     return index < elements.size() ? elements.get(index) : null;
                 },
-                description + "[" + index + "]");
+                description + "[" + index + "]",
+                snapshot);
     }
 
     @Override
@@ -81,31 +114,7 @@ public class BaseElements implements Elements {
                     List<WebElement> elements = resolver.apply(d);
                     return elements.isEmpty() ? null : elements.get(elements.size() - 1);
                 },
-                description + "[last]");
-    }
-
-    /** A predicate reads one snapshot; only the enclosing collection poll retries that read. */
-    private static final class PredicateElement extends BaseElement {
-        private final WebElement current;
-
-        private PredicateElement(WebElement current) {
-            super(current);
-            this.current = current;
-        }
-
-        @Override
-        public String getText() {
-            return current.getText().trim();
-        }
-
-        @Override
-        public String getValue() {
-            return current.getDomProperty("value");
-        }
-
-        @Override
-        public boolean isVisible() {
-            return current.isDisplayed();
-        }
+                description + "[last]",
+                snapshot);
     }
 }
