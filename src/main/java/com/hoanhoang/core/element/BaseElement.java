@@ -2,8 +2,8 @@ package com.hoanhoang.core.element;
 
 import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.DriverManager;
-import com.hoanhoang.core.util.JavaScript;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.driver.DriverUtils;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.report.logger.Log;
 import java.util.List;
 import java.util.Objects;
@@ -59,7 +59,7 @@ public class BaseElement implements Element {
     private WebElement present() {
         return snapshot
                 ? requireResolved()
-                : UiWait.until(
+                : WebDriverWaitHelper.until(
                         description + " present",
                         ConfigLoader.getConfig().getElementTimeout() * 1000L,
                         resolver);
@@ -81,7 +81,7 @@ public class BaseElement implements Element {
         if (snapshot) {
             return requireResolved();
         }
-        return UiWait.until(
+        return WebDriverWaitHelper.until(
                 description + " visible",
                 ConfigLoader.getConfig().getElementTimeout() * 1000L,
                 this::resolveVisible);
@@ -89,7 +89,7 @@ public class BaseElement implements Element {
 
     private WebElement clickable() {
         requireLiveElement();
-        return UiWait.until(
+        return WebDriverWaitHelper.until(
                 description + " clickable",
                 ConfigLoader.getConfig().getActionTimeout() * 1000L,
                 d -> {
@@ -102,7 +102,7 @@ public class BaseElement implements Element {
     public void click() {
         requireLiveElement();
         Log.debug("Click: " + description);
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Click " + description,
                 ConfigLoader.getConfig().getActionTimeout() * 1000L,
                 driver -> {
@@ -110,7 +110,8 @@ public class BaseElement implements Element {
                     if (element == null || !element.isEnabled()) {
                         return false;
                     }
-                    JavaScript.execute("arguments[0].scrollIntoView({block:'center'});", element);
+                    DriverUtils.executeScript(
+                            "arguments[0].scrollIntoView({block:'center'});", element);
                     element.click();
                     return true;
                 });
@@ -118,7 +119,7 @@ public class BaseElement implements Element {
 
     @Override
     public void jsClick() {
-        JavaScript.execute("arguments[0].click();", clickable());
+        DriverUtils.executeScript("arguments[0].click();", clickable());
     }
 
     @Override
@@ -135,7 +136,7 @@ public class BaseElement implements Element {
     }
 
     private static void blur(WebElement input) {
-        JavaScript.execute("arguments[0].blur();", input);
+        DriverUtils.executeScript("arguments[0].blur();", input);
     }
 
     @Override
@@ -268,7 +269,7 @@ public class BaseElement implements Element {
     public <T> T waitUntil(String expectation, Function<Element, T> condition) {
         requireLiveElement();
         Objects.requireNonNull(condition);
-        return UiWait.until(
+        return WebDriverWaitHelper.until(
                 expectation,
                 driver -> condition.apply(snapshot(resolver.apply(driver), description)));
     }
@@ -276,7 +277,7 @@ public class BaseElement implements Element {
     @Override
     public Element shouldHave(Condition condition) {
         requireLiveElement();
-        UiWait.assertEventually(
+        WebDriverWaitHelper.assertEventually(
                 description + " should have " + condition,
                 d -> {
                     WebElement current = resolveVisible(d);

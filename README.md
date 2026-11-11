@@ -50,10 +50,10 @@ src/main/java/com/hoanhoang
 ├── core
 │   ├── config      EnvironmentConfig, ConfigLoader, JsonConfigLoader   (JSON config per environment)
 │   ├── constant    FrameworkConstants                                    (resource folders)
-│   ├── driver      BrowserType, DriverFactory (factory), DriverManager (ThreadLocal, one driver per thread)
+│   ├── driver      BrowserType, DriverFactory, DriverManager (ThreadLocal), DriverUtils (browser operations)
 │   ├── element     Element/$(), Elements/$$(), Condition                  (element wrapper + checks)
 │   ├── exception   ConfigLoadException, DriverInitializationException
-│   └── util        UiWait, JavaScript, JsonMapper                          (wait engine, script execution, JSON I/O)
+│   └── util        WebDriverWaitHelper, JsonMapper                         (wait engine, JSON I/O)
 ├── data
 │   ├── model       DTOs/records: UserDto, BillingDetails, ReviewData, Product, CartItem, OrderItem, ...
 │   ├── builder     BillingBuilder
@@ -71,7 +71,6 @@ src/main/java/com/hoanhoang
 src/test/java/com/hoanhoang
 ├── tests           BaseTest and functional test classes (SingleProductPurchaseTest, CartQuantityTest, ...)
 │   └── support     PurchaseAssertions, OrderFixture, TestSession, SuiteConfiguration
-├── integration     WrapperBrowserTest; support/HtmlFixture (local HTML loading)
 └── unit
     ├── FrameworkTest   TestNG factory; stable Maven entry point, no browser
     ├── checks/        ConfigDataChecks, CredentialChecks, ElementDriverChecks, PurchaseChecks, RetryChecks, WrapperChecks
@@ -80,7 +79,6 @@ src/test/java/com/hoanhoang
 src/test/resources
 ├── config/         dev.json, prod.json, sample.json
 ├── testdata/       test-credentials.json, test-review.json, payment-methods.json
-├── fixtures/       wrapper-page.html (synthetic browser-test document)
 ├── testng.xml      suite: 10 functional test classes, parallel by class
 └── log4j2.xml      logging configuration
 ```
@@ -91,7 +89,7 @@ Layering:
   `placeOrder()`) and do all checking (AssertJ / `shouldHave`).
   Steps are grouped by preparation, action and verification. Longer assertion blocks live in
   named helpers inside the test class; reusable cart/order checks live in `PurchaseAssertions`.
-  Test classes, including `BaseTest` and unit/integration checks, contain no `try` blocks.
+  Test classes, including `BaseTest` and unit checks, contain no `try` blocks.
   Resource management belongs in support fixtures. Teardown uses
   `@AfterMethod(alwaysRun = true)`; `TestSession` releases accounts even if browser shutdown
   fails. Scenario methods contain direct business actions and assertions. Expected exceptions use
@@ -99,8 +97,11 @@ Layering:
 - **Pages/components** perform actions and read state. Tests explicitly invoke check helpers
   such as `haveTitle()` and `shouldHave(...)`; business actions do not assert scenario outcomes.
 - **Core** hides Selenium details: waits, element wrapper, driver lifecycle.
-- **Element wrappers** own DOM polling and JavaScript actions. `JavaScript.execute(...)` is the
-  shared browser-script entry point; `UiWait` supplies the wait engine and browser/page waits.
+- **DriverManager** manages the per-thread driver lifecycle. `DriverUtils` opens URLs, refreshes
+  the current page and executes browser scripts using that thread's driver.
+- **Element wrappers** own DOM polling and element-specific JavaScript actions, delegating script
+  execution to `DriverUtils.executeScript(...)`. `WebDriverWaitHelper` supplies the wait engine
+  and browser/page waits.
 - **Pages/components** use `Element` and `Elements` for DOM access. Raw `WebElement`,
   child-element lookup, Selenium `Select` and node-staleness checks stay inside core.
   Browser navigation and application-specific JavaScript readiness checks remain separate.
@@ -314,18 +315,11 @@ and keep full Internet access available for the complete run.
 | One test class | `.\mvnw.cmd "-Dtest=SingleProductPurchaseTest" test` |
 | Reproduce a random product choice | `.\mvnw.cmd "-Dtest=SingleProductPurchaseTest" "-Drandom.seed=123" test` |
 | Framework checks (no browser) | `.\mvnw.cmd "-Dtest=FrameworkTest" test` |
-| Wrapper checks on local HTML (headless Chrome) | `.\mvnw.cmd "-Dtest=WrapperBrowserTest" test` |
 | Compile only | `.\mvnw.cmd -DskipTests test-compile` |
 
 Framework listeners register through `src/test/resources/META-INF/services/org.testng.ITestNGListener`.
 Failure diagnostics and retry are active for both suite runs and `-Dtest=...`; do not register
 the same listeners again in suite XML.
-
-`WrapperBrowserTest` is optional and runs separately from both `FrameworkTest` and `testng.xml`.
-It uses a synthetic local HTML document and requires no demo accounts. It checks real browser
-behaviour for nested queries, DOM replacement, dropdown selection, hidden payment/rating fields,
-billing blur, cart changes and review submission. Browser/driver resolution may require Internet
-access; this test does not contact the demo website and does not replace testing against it.
 
 Other options:
 
@@ -343,8 +337,8 @@ per-run summary is unclear. The build still fails if an invocation exhausts its 
 ### Rerun only the failed tests
 
 After a suite run TestNG writes the failed tests to
-`test-output/<suite name>/testng-failed.xml`. Copy it out of `test-output` (the next run cleans
-that folder) and run it as a suite:
+`test-output/<suite name>/testng-failed.xml`. Copy it out of `test-output` to preserve the failed-test
+list before another run can overwrite it, then run the copy as a suite:
 
 ```powershell
 Copy-Item "test-output\Selenium Test Suite\testng-failed.xml" target\rerun-failed.xml
@@ -398,7 +392,7 @@ in test descriptions and this table for traceability; use the class name with Ma
 | TC04 | `ProductSortingTest` | Sort by price low→high and high→low | Also checks the Shop page title |
 | TC05 | `OrderHistoryTest` | Orders appear in order history | Creates its two orders first (OrderFixture), then finds them by number |
 | TC06 | `GuestCheckoutTest` | Guest purchase, grid and list view | No login |
-| TC07 | `CheckoutValidationTest` | Mandatory billing fields left blank | Checks messages and field highlights separately; includes postcode when required by the current form |
+| TC07 | `CheckoutValidationTest` | Mandatory billing fields left blank | Checks messages and field highlights separately using `BillingFormComponent.Field`, keeping HTML IDs in the page/component; includes postcode when required by the current form |
 | TC08 | `CartClearTest` | Clear shopping cart | Verifies the clear button removes every row and shows the empty-cart message; runs have failed when items remained |
 | TC09 | `CartQuantityTest` | Update quantity (+, type 4 and click UPDATE CART, −), then reload | Waits for the cart row to be replaced; assertions compare quantity and subtotal, then persistence after reload |
 | TC10 | `ProductReviewTest` | Post a review | Reopens Reviews after submission and verifies the unique submitted comment is visible with the correct stars; does not check review count or require approval |

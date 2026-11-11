@@ -5,7 +5,7 @@ import static com.hoanhoang.core.element.ElementFactory.$$;
 
 import com.hoanhoang.core.element.Element;
 import com.hoanhoang.core.element.Elements;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.data.model.Review;
 import com.hoanhoang.data.model.ReviewData;
 import com.hoanhoang.pages.support.ApplicationWait;
@@ -62,7 +62,7 @@ public class ReviewComponent {
         commentInput.type(comment);
         BooleanSupplier formReplaced = submitButton.watchForReplacement();
         submitButton.click();
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Review submission response",
                 d -> {
                     failIfSubmissionError();

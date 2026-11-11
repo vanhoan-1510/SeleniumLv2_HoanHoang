@@ -10,6 +10,8 @@ import com.hoanhoang.core.driver.DriverManager;
 import com.hoanhoang.data.model.CartItem;
 import com.hoanhoang.data.model.OrderItem;
 import com.hoanhoang.data.model.Product;
+import com.hoanhoang.pages.CheckoutPage;
+import com.hoanhoang.pages.components.BillingFormComponent.Field;
 import com.hoanhoang.pages.components.CartTableComponent;
 import com.hoanhoang.tests.support.PurchaseAssertions;
 import java.math.BigDecimal;
@@ -18,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
@@ -76,6 +79,49 @@ public class PurchaseChecks {
         Product product = new Product("A", new BigDecimal("10.00"));
         PurchaseAssertions.assertOrderItems(
                 List.of(new OrderItem("A", 2, new BigDecimal("20"))), List.of(product, product));
+    }
+
+    @Test
+    public void checkoutReadsFieldMessagesAndHighlightsIndependently() {
+        WebElement firstNameError =
+                mockElement(
+                        (proxy, method, args) ->
+                                switch (method.getName()) {
+                                    case "isDisplayed" -> true;
+                                    case "getText" -> "First name is required";
+                                    case "getDomAttribute" -> "billing_first_name";
+                                    default -> null;
+                                });
+        WebElement generalError = mockElement("Checkout could not be completed");
+        AtomicReference<List<WebElement>> highlightedFields = new AtomicReference<>(List.of());
+        DriverManager.setDriver(
+                mockDriver(
+                        (proxy, method, args) ->
+                                method.getName().equals("findElements")
+                                        ? args[0].toString().contains(".woocommerce-error")
+                                                ? List.of(firstNameError, generalError)
+                                                : highlightedFields.get()
+                                        : null));
+        CheckoutPage checkout = new CheckoutPage();
+
+        assertThat(checkout.getFieldErrorMessages())
+                .containsOnlyKeys(Field.FIRST_NAME)
+                .containsEntry(Field.FIRST_NAME, "First name is required");
+        assertThat(checkout.getErrorMessages())
+                .containsExactly("First name is required", "Checkout could not be completed");
+        assertThat(checkout.getInvalidBillingFields()).isEmpty();
+
+        highlightedFields.set(
+                List.of(
+                        mockElement(
+                                (proxy, method, args) ->
+                                        switch (method.getName()) {
+                                            case "isDisplayed" -> true;
+                                            case "getDomAttribute" -> "billing_postcode_field";
+                                            default -> null;
+                                        })));
+        assertThat(checkout.getInvalidBillingFields()).containsExactly(Field.POSTCODE);
+        assertThat(checkout.getFieldErrorMessages()).doesNotContainKey(Field.POSTCODE);
     }
 
     private static final class QuantityUpdateFixture {

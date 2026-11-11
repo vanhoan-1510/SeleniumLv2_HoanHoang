@@ -12,8 +12,8 @@ import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-public final class UiWait {
-    private UiWait() {}
+public final class WebDriverWaitHelper {
+    private WebDriverWaitHelper() {}
 
     public static <T> T until(String description, Function<WebDriver, T> condition) {
         return until(description, ConfigLoader.getConfig().getUiTimeoutMs(), condition);

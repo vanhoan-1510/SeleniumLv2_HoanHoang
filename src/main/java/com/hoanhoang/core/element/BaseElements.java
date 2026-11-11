@@ -1,7 +1,7 @@
 package com.hoanhoang.core.element;
 
 import com.hoanhoang.core.driver.DriverManager;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
@@ -72,7 +72,7 @@ public class BaseElements implements Elements {
                     "Snapshot callbacks support reads only: " + description);
         }
         Objects.requireNonNull(condition);
-        return UiWait.until(expectation, driver -> readSnapshot(condition));
+        return WebDriverWaitHelper.until(expectation, driver -> readSnapshot(condition));
     }
 
     @Override

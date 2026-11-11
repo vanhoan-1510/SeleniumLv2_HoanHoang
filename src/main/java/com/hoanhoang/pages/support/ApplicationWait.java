@@ -1,8 +1,8 @@
 package com.hoanhoang.pages.support;
 
 import com.hoanhoang.core.driver.DriverManager;
-import com.hoanhoang.core.util.JavaScript;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.driver.DriverUtils;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriverException;
@@ -31,7 +31,7 @@ public final class ApplicationWait {
     private ApplicationWait() {}
 
     public static void failIfCriticalError() {
-        if (Boolean.TRUE.equals(JavaScript.execute(CRITICAL_ERROR_SCRIPT))) {
+        if (Boolean.TRUE.equals(DriverUtils.executeScript(CRITICAL_ERROR_SCRIPT))) {
             throw new IllegalStateException(
                     "Site returned WordPress critical error: "
                             + DriverManager.getDriver().getCurrentUrl());
@@ -44,7 +44,7 @@ public final class ApplicationWait {
         } catch (TimeoutException timeout) {
             String state;
             try {
-                state = String.valueOf(JavaScript.execute(READINESS_STATE_SCRIPT));
+                state = String.valueOf(DriverUtils.executeScript(READINESS_STATE_SCRIPT));
             } catch (WebDriverException diagnosticsFailure) {
                 timeout.addSuppressed(diagnosticsFailure);
                 throw timeout;
@@ -55,12 +55,12 @@ public final class ApplicationWait {
     }
 
     private static void waitUntilIdle() {
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Page document and WooCommerce updates complete",
                 driver -> {
                     failIfCriticalError();
                     return Boolean.TRUE.equals(
-                            JavaScript.execute(
+                            DriverUtils.executeScript(
                                     "return document.readyState === 'complete' && "
                                             + "(!window.jQuery || jQuery.active === 0) && "
                                             + "!Array.from(document.querySelectorAll('.blockUI.blockOverlay, .et-loader.loading')).some(e => "

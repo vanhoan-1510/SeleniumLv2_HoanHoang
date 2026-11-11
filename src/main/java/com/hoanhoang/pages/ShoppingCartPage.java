@@ -1,9 +1,9 @@
 package com.hoanhoang.pages;
 
-import com.hoanhoang.core.driver.DriverManager;
+import com.hoanhoang.core.driver.DriverUtils;
 import com.hoanhoang.core.element.Element;
 import com.hoanhoang.core.element.Elements;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.data.model.CartItem;
 import com.hoanhoang.pages.components.CartTableComponent;
 import com.hoanhoang.pages.support.ApplicationWait;
@@ -23,14 +23,14 @@ public class ShoppingCartPage extends BasePage {
 
     public void waitUntilLoaded() {
         ApplicationWait.idle();
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Cart table or empty-cart state loaded",
                 d -> table.isVisible() || isEmptyCartMessageVisible());
     }
 
     @Step("Reload Shopping Cart page")
     public void reloadAndWaitUntilReady() {
-        DriverManager.getDriver().navigate().refresh();
+        DriverUtils.refresh();
         waitUntilLoaded();
     }
 
@@ -72,7 +72,9 @@ public class ShoppingCartPage extends BasePage {
     @Step("Click 'Clear shopping cart' and confirm")
     public void clearCartUsingClearCartButton() {
         clearCartButton.click();
-        UiWait.until("Clear-cart confirmation alert", ExpectedConditions.alertIsPresent()).accept();
+        WebDriverWaitHelper.until(
+                        "Clear-cart confirmation alert", ExpectedConditions.alertIsPresent())
+                .accept();
         ApplicationWait.idle();
     }
 

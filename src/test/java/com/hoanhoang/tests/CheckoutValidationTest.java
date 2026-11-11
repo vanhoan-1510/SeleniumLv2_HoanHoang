@@ -8,6 +8,7 @@ import com.hoanhoang.pages.HeaderComponent;
 import com.hoanhoang.pages.HomePage;
 import com.hoanhoang.pages.ShopPage;
 import com.hoanhoang.pages.ShoppingCartPage;
+import com.hoanhoang.pages.components.BillingFormComponent.Field;
 import java.util.ArrayList;
 import java.util.List;
 import org.testng.annotations.Test;
@@ -29,17 +30,17 @@ public class CheckoutValidationTest extends BaseTest {
         CheckoutPage checkout = new CheckoutPage();
         checkout.waitUntilLoaded();
 
-        List<String> expectedMissingFields =
+        List<Field> expectedMissingFields =
                 new ArrayList<>(
                         List.of(
-                                "billing_first_name",
-                                "billing_last_name",
-                                "billing_address_1",
-                                "billing_city",
-                                "billing_phone",
-                                "billing_email"));
+                                Field.FIRST_NAME,
+                                Field.LAST_NAME,
+                                Field.ADDRESS,
+                                Field.CITY,
+                                Field.PHONE,
+                                Field.EMAIL));
         if (checkout.isPostcodeRequired()) {
-            expectedMissingFields.add("billing_postcode");
+            expectedMissingFields.add(Field.POSTCODE);
         }
         checkout.fillBillingDetails(BillingBuilder.blank().build());
         checkout.placeOrder();
@@ -48,7 +49,7 @@ public class CheckoutValidationTest extends BaseTest {
     }
 
     private void assertRequiredFieldValidation(
-            CheckoutPage checkout, List<String> expectedMissingFields) {
+            CheckoutPage checkout, List<Field> expectedMissingFields) {
         assertThat(checkout.isLoaded()).as("Validation keeps user at checkout").isTrue();
         assertThat(checkout.getErrorMessages())
                 .as("Required-field validation messages")
@@ -56,8 +57,8 @@ public class CheckoutValidationTest extends BaseTest {
                 .allSatisfy(message -> assertThat(message).isNotBlank());
         assertThat(checkout.getFieldErrorMessages())
                 .as("Missing mandatory fields have validation messages")
-                .containsKeys(expectedMissingFields.toArray(String[]::new));
-        assertThat(checkout.getInvalidBillingFieldIds())
+                .containsKeys(expectedMissingFields.toArray(Field[]::new));
+        assertThat(checkout.getInvalidBillingFields())
                 .as("Missing mandatory fields highlighted")
                 .containsAll(expectedMissingFields);
     }

@@ -1,9 +1,9 @@
 package com.hoanhoang.pages;
 
 import com.hoanhoang.core.config.ConfigLoader;
-import com.hoanhoang.core.driver.DriverManager;
+import com.hoanhoang.core.driver.DriverUtils;
 import com.hoanhoang.core.element.Element;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.pages.support.ApplicationWait;
 import io.qameta.allure.Step;
 import org.openqa.selenium.By;
@@ -34,7 +34,7 @@ public class HeaderComponent extends BasePage {
         allDepartments.hover();
         categoryElectronic.jsClick();
         // Wait for the category page itself: the previous page's product cards would match too.
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Electronic Components & Supplies category page opened",
                 d -> d.getCurrentUrl().contains(ElectronicPage.PATH));
         ApplicationWait.idle();
@@ -53,7 +53,7 @@ public class HeaderComponent extends BasePage {
 
     private void goToPath(String path) {
         String baseUrl = ConfigLoader.getConfig().getBaseUrl().replaceAll("/+$", "");
-        DriverManager.getDriver().get(baseUrl + "/" + path + "/");
+        DriverUtils.open(baseUrl + "/" + path + "/");
         ApplicationWait.idle();
     }
 }

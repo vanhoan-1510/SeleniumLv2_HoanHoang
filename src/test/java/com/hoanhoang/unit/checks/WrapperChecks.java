@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hoanhoang.core.config.ConfigLoader;
 import com.hoanhoang.core.driver.DriverManager;
 import com.hoanhoang.core.element.Element;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.pages.components.TableComponent;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +48,7 @@ public class WrapperChecks {
 
         assertThatThrownBy(
                         () ->
-                                UiWait.assertEventually(
+                                WebDriverWaitHelper.assertEventually(
                                         "value is ready",
                                         driver -> {
                                             throw failure;

@@ -2,11 +2,12 @@ package com.hoanhoang.pages;
 
 import com.hoanhoang.core.element.Element;
 import com.hoanhoang.core.element.Elements;
-import com.hoanhoang.core.util.UiWait;
+import com.hoanhoang.core.util.WebDriverWaitHelper;
 import com.hoanhoang.data.constant.PaymentMethod;
 import com.hoanhoang.data.model.BillingDetails;
 import com.hoanhoang.data.model.OrderItem;
 import com.hoanhoang.pages.components.BillingFormComponent;
+import com.hoanhoang.pages.components.BillingFormComponent.Field;
 import com.hoanhoang.pages.components.OrderItemsComponent;
 import com.hoanhoang.pages.components.PaymentComponent;
 import com.hoanhoang.pages.support.ApplicationWait;
@@ -14,6 +15,7 @@ import io.qameta.allure.Step;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.openqa.selenium.By;
 
 public class CheckoutPage extends BasePage {
@@ -74,7 +76,7 @@ public class CheckoutPage extends BasePage {
     public void placeOrder() {
         ApplicationWait.idle();
         placeOrderButton.click();
-        UiWait.until(
+        WebDriverWaitHelper.until(
                 "Checkout response: order confirmation or validation errors",
                 d -> {
                     ApplicationWait.failIfCriticalError();
@@ -89,23 +91,25 @@ public class CheckoutPage extends BasePage {
         return errorMessages.visible().map(Element::getText);
     }
 
-    public List<String> getInvalidBillingFieldIds() {
+    public List<Field> getInvalidBillingFields() {
         return invalidBillingFields
                 .visible()
-                .map(field -> field.getDomAttribute("id").replaceFirst("_field$", ""));
+                .map(field -> field.getDomAttribute("id").replaceFirst("_field$", ""))
+                .stream()
+                .map(Field::fromInputId)
+                .flatMap(Optional::stream)
+                .toList();
     }
 
-    public Map<String, String> getFieldErrorMessages() {
+    public Map<Field, String> getFieldErrorMessages() {
         return errorMessages
                 .visible()
                 .readSnapshot(
                         messages -> {
-                            Map<String, String> result = new LinkedHashMap<>();
+                            Map<Field, String> result = new LinkedHashMap<>();
                             for (Element error : messages) {
-                                String field = error.getDomAttribute("data-id");
-                                if (field != null && !field.isBlank()) {
-                                    result.put(field, error.getText());
-                                }
+                                Field.fromInputId(error.getDomAttribute("data-id"))
+                                        .ifPresent(field -> result.put(field, error.getText()));
                             }
                             return Map.copyOf(result);
                         });
